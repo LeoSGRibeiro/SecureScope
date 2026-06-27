@@ -42,7 +42,7 @@ export function Sidebar() {
             exit={{ opacity: 0 }}
             className="font-bold text-sm tracking-wider text-foreground"
           >
-            SECURESCOPE
+            THREATLENS
           </motion.span>
         )}
       </div>

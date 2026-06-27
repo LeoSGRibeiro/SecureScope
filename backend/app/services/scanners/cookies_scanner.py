@@ -17,7 +17,7 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
             timeout=timeout,
             follow_redirects=True,
             verify=False,
-            headers={"User-Agent": "SecureScope-Scanner/1.0 (Authorized Security Audit)"},
+            headers={"User-Agent": "ThreatLens-Scanner/1.0 (Authorized Security Audit)"},
         ) as client:
             response = await client.get(url)
 

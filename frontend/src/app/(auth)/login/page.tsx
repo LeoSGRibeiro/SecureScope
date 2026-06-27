@@ -81,8 +81,8 @@ export default function LoginPage() {
               <Shield className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-foreground tracking-wider">SECURESCOPE</h1>
-              <p className="text-xs text-muted-foreground">Defensive Security Platform</p>
+              <h1 className="font-bold text-lg text-foreground tracking-wider">THREATLENS</h1>
+              <p className="text-xs text-muted-foreground">Enxergando ameaças antes que elas virem incidentes</p>
             </div>
           </div>
 

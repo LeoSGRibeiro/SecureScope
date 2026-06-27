@@ -79,7 +79,7 @@ async def scan(url: str, timeout: int = 30) -> ScanResult:
         async with httpx.AsyncClient(
             timeout=timeout,
             verify=True,
-            headers={"User-Agent": "SecureScope-Scanner/1.0 (Authorized Security Audit)"},
+            headers={"User-Agent": "ThreatLens-Scanner/1.0 (Authorized Security Audit)"},
         ) as client:
             ct_subs = await _crt_sh(domain, client)
             subdomains_found.extend(ct_subs)

@@ -143,7 +143,7 @@ QScrollBar::handle:vertical:hover {
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("SecureScope Desktop")
+        self.setWindowTitle("ThreatLens Desktop")
         self.resize(1080, 700)
         self.setStyleSheet(STYLESHEET)
         self.worker: ScanWorker | None = None
@@ -159,9 +159,9 @@ class MainWindow(QMainWindow):
 
         header = QVBoxLayout()
         header.setSpacing(2)
-        title = QLabel("SecureScope")
+        title = QLabel("ThreatLens")
         title.setObjectName("HeaderTitle")
-        subtitle = QLabel("Varredura de segurança externa — digite uma URL e pressione Enter ou clique em Scan")
+        subtitle = QLabel("Enxergando ameaças antes que elas virem incidentes — digite uma URL e pressione Enter ou clique em Scan")
         subtitle.setObjectName("HeaderSubtitle")
         header.addWidget(title)
         header.addWidget(subtitle)
@@ -331,7 +331,7 @@ class MainWindow(QMainWindow):
     def export_csv_clicked(self):
         if not self.last_result:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Exportar CSV", "securescope_report.csv", "CSV (*.csv)")
+        path, _ = QFileDialog.getSaveFileName(self, "Exportar CSV", "threatlens_report.csv", "CSV (*.csv)")
         if not path:
             return
         try:
@@ -343,7 +343,7 @@ class MainWindow(QMainWindow):
     def export_pdf_clicked(self):
         if not self.last_result:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Exportar PDF", "securescope_report.pdf", "PDF (*.pdf)")
+        path, _ = QFileDialog.getSaveFileName(self, "Exportar PDF", "threatlens_report.pdf", "PDF (*.pdf)")
         if not path:
             return
         try:

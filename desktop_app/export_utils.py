@@ -35,7 +35,7 @@ def export_pdf(result: dict, url: str, path: str) -> None:
 
     doc = SimpleDocTemplate(path, pagesize=A4, topMargin=1.5 * cm, bottomMargin=1.5 * cm)
     story = [
-        Paragraph("SecureScope — Relatório de Scan", styles["Title"]),
+        Paragraph("ThreatLens — Relatório de Scan", styles["Title"]),
         Paragraph(f"Alvo: {url}", styles["Normal"]),
         Paragraph(f"Risk score: {result.get('risk_score')} | Duração: {result.get('duration_ms')} ms | "
                   f"Achados: {len(findings)}", styles["Normal"]),

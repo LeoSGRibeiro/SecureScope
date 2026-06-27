@@ -1,4 +1,4 @@
-# SecureScope — Defensive Security Platform
+# ThreatLens — Enxergando ameaças antes que elas virem incidentes
 
 > **AUTHORIZED USE ONLY.** This tool is exclusively for security testing of systems you own
 > or have **explicit written authorization** to test. Unauthorized use is illegal and may
@@ -8,7 +8,7 @@
 
 ## Overview
 
-SecureScope is a production-grade, full-stack web security analysis platform focused on
+ThreatLens is a production-grade, full-stack web security analysis platform focused on
 **defensive, non-destructive auditing**. It helps security teams identify misconfigurations,
 validate hardening, and generate professional reports.
 

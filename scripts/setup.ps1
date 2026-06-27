@@ -1,8 +1,8 @@
-# SecureScope - Quick Setup (Windows/PowerShell)
+# ThreatLens - Quick Setup (Windows/PowerShell)
 Set-StrictMode -Version Latest
 
 Write-Host "======================================"
-Write-Host "  SecureScope - Security Platform"
+Write-Host "  ThreatLens - Security Platform"
 Write-Host "  AUTHORIZED USE ONLY"
 Write-Host "======================================"
 Write-Host ""
@@ -33,7 +33,7 @@ docker-compose up -d
 
 Write-Host ""
 Write-Host "======================================"
-Write-Host "  SecureScope is running!"
+Write-Host "  ThreatLens is running!"
 Write-Host ""
 Write-Host "  Frontend:  http://localhost:3000"
 Write-Host "  API Docs:  http://localhost:8000/api/docs"

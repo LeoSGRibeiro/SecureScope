@@ -6,7 +6,7 @@ import { Providers } from "@/components/providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SecureScope — Defensive Security Platform",
+  title: "ThreatLens — Enxergando ameaças antes que elas virem incidentes",
   description: "Authorized web security analysis and vulnerability assessment platform",
   robots: "noindex,nofollow",
 };

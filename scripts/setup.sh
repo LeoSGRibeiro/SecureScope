@@ -1,9 +1,9 @@
 #!/bin/bash
-# SecureScope — Quick Setup Script
+# ThreatLens — Quick Setup Script
 set -e
 
 echo "======================================"
-echo "  SecureScope — Security Platform"
+echo "  ThreatLens — Security Platform"
 echo "  AUTHORIZED USE ONLY"
 echo "======================================"
 echo ""
@@ -36,7 +36,7 @@ docker-compose up -d
 
 echo ""
 echo "======================================"
-echo "  SecureScope is running!"
+echo "  ThreatLens is running!"
 echo ""
 echo "  Frontend:  http://localhost:3000"
 echo "  API:       http://localhost:8000/api/docs"
