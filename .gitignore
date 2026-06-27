@@ -20,6 +20,7 @@ npm-debug.log*
 # Desktop app exports (user-generated reports, not source)
 desktop_app/*.csv
 desktop_app/*.pdf
+desktop_app/err*.txt
 
 # Docker / OS
 .DS_Store
