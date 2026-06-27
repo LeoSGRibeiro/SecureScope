@@ -1,0 +1,138 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: securescope
+      POSTGRES_PASSWORD: securescope
+      POSTGRES_DB: securescope
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U securescope"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [securescope]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ""
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks: [securescope]
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://securescope:securescope@db:5432/securescope
+      DATABASE_SYNC_URL: postgresql://securescope:securescope@db:5432/securescope
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      ALLOWED_ORIGINS: '["http://localhost:3000","http://localhost:80","http://frontend:3000"]'
+      SECRET_KEY: ${SECRET_KEY:-changeme_in_production_use_random_64_chars}
+      DEBUG: ${DEBUG:-false}
+    volumes:
+      - uploads:/app/uploads
+      - reports:/app/reports
+    ports:
+      - "8000:8000"
+    networks: [securescope]
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=4 -Q celery
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://securescope:securescope@db:5432/securescope
+      DATABASE_SYNC_URL: postgresql://securescope:securescope@db:5432/securescope
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      SECRET_KEY: ${SECRET_KEY:-changeme_in_production_use_random_64_chars}
+    volumes:
+      - uploads:/app/uploads
+      - reports:/app/reports
+    networks: [securescope]
+
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app flower --port=5555
+    depends_on: [redis]
+    ports:
+      - "5555:5555"
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/1
+    networks: [securescope]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on: [backend]
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    ports:
+      - "3000:3000"
+    networks: [securescope]
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on: [backend, frontend]
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    networks: [securescope]
+
+  migrations:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: alembic upgrade head
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_SYNC_URL: postgresql://securescope:securescope@db:5432/securescope
+    networks: [securescope]
+    restart: "no"
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads:
+  reports:
+
+networks:
+  securescope:
+    driver: bridge
