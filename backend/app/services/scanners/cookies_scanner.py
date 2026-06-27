@@ -30,8 +30,8 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
 
         if not all_set_cookie:
             findings.append(Finding(
-                title="Nenhum Cookie Detectado",
-                description="Nenhum cabeçalho Set-Cookie foi encontrado na resposta. Se a aplicação usa sessões, verifique se os cookies estão sendo definidos.",
+                title="No Cookies Detected",
+                description="No Set-Cookie headers found in the response. If the application uses sessions, verify that cookies are being set.",
                 severity=Severity.informational,
                 category="Cookies",
                 module="cookies",
@@ -51,42 +51,42 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
 
             if "httponly" not in attrs_lower:
                 findings.append(Finding(
-                    title=f"Cookie '{name}' Sem o Atributo HttpOnly",
-                    description=f"O cookie '{name}' é acessível via JavaScript (sem HttpOnly). Isso possibilita roubo de sessão via XSS.",
+                    title=f"Cookie '{name}' Missing HttpOnly Flag",
+                    description=f"Cookie '{name}' is accessible via JavaScript (no HttpOnly). This enables XSS-based session hijacking.",
                     severity=Severity.medium,
                     category="Cookies",
                     module="cookies",
                     affected_url=url,
                     evidence={"cookie_name": name, "raw_header": cookie_str},
-                    recommendation=f"Adicione o atributo 'HttpOnly' ao cookie '{name}'.",
+                    recommendation=f"Add 'HttpOnly' attribute to cookie '{name}'.",
                     owasp_category="A02:2021 – Cryptographic Failures",
                     references=["https://owasp.org/www-community/HttpOnly"],
                 ))
 
             if is_https and "secure" not in attrs_lower:
                 findings.append(Finding(
-                    title=f"Cookie '{name}' Sem o Atributo Secure",
-                    description=f"O cookie '{name}' pode ser transmitido por conexões HTTP não criptografadas.",
+                    title=f"Cookie '{name}' Missing Secure Flag",
+                    description=f"Cookie '{name}' may be transmitted over unencrypted HTTP connections.",
                     severity=Severity.medium,
                     category="Cookies",
                     module="cookies",
                     affected_url=url,
                     evidence={"cookie_name": name, "raw_header": cookie_str},
-                    recommendation=f"Adicione o atributo 'Secure' ao cookie '{name}'.",
+                    recommendation=f"Add 'Secure' attribute to cookie '{name}'.",
                     owasp_category="A02:2021 – Cryptographic Failures",
                 ))
 
             samesite_attrs = [p for p in attrs_lower if "samesite" in p]
             if not samesite_attrs:
                 findings.append(Finding(
-                    title=f"Cookie '{name}' Sem o Atributo SameSite",
-                    description=f"O cookie '{name}' não possui o atributo SameSite, ficando vulnerável a ataques de CSRF.",
+                    title=f"Cookie '{name}' Missing SameSite Attribute",
+                    description=f"Cookie '{name}' has no SameSite attribute, leaving it vulnerable to CSRF attacks.",
                     severity=Severity.medium,
                     category="Cookies",
                     module="cookies",
                     affected_url=url,
                     evidence={"cookie_name": name, "raw_header": cookie_str},
-                    recommendation=f"Adicione 'SameSite=Strict' ou 'SameSite=Lax' ao cookie '{name}'.",
+                    recommendation=f"Add 'SameSite=Strict' or 'SameSite=Lax' to cookie '{name}'.",
                     owasp_category="A01:2021 – Broken Access Control",
                     references=["https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite"],
                 ))
@@ -94,32 +94,32 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                 samesite_val = samesite_attrs[0].split("=")[-1].strip() if "=" in samesite_attrs[0] else ""
                 if samesite_val == "none" and "secure" not in attrs_lower:
                     findings.append(Finding(
-                        title=f"Cookie '{name}' com SameSite=None Sem Secure",
-                        description="SameSite=None exige o atributo Secure; caso contrário, navegadores modernos irão rejeitar o cookie.",
+                        title=f"Cookie '{name}' SameSite=None Without Secure",
+                        description="SameSite=None requires the Secure attribute; otherwise modern browsers will reject it.",
                         severity=Severity.medium,
                         category="Cookies",
                         module="cookies",
                         affected_url=url,
                         evidence={"cookie_name": name, "raw_header": cookie_str},
-                        recommendation="Adicione o atributo Secure quando usar SameSite=None.",
+                        recommendation="Add Secure attribute when using SameSite=None.",
                     ))
 
             # Session cookies without expiry — informational
             has_expiry = any("expires=" in p or "max-age=" in p for p in attrs_lower)
             if not has_expiry and ("session" in name.lower() or "auth" in name.lower() or "token" in name.lower()):
                 findings.append(Finding(
-                    title=f"Cookie de Sessão '{name}' Sem Expiração",
-                    description="O cookie de sessão não possui data de expiração; ele persiste até o navegador ser fechado.",
+                    title=f"Session Cookie '{name}' Has No Expiry",
+                    description="Session cookie lacks an expiry date; it persists until the browser is closed.",
                     severity=Severity.informational,
                     category="Cookies",
                     module="cookies",
                     affected_url=url,
                     evidence={"cookie_name": name},
-                    recommendation="Defina um Max-Age ou Expires explícito para cookies de sessão.",
+                    recommendation="Set an explicit Max-Age or Expires for session cookies.",
                 ))
 
     except httpx.TimeoutException:
-        return ScanResult(module="cookies", error=f"A requisição expirou após {timeout}s")
+        return ScanResult(module="cookies", error=f"Request timed out after {timeout}s")
     except httpx.RequestError as e:
         return ScanResult(module="cookies", error=str(e))
 

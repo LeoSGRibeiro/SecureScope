@@ -74,7 +74,7 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
 
     host = _extract_host(url)
     if not host or _is_blocked_host(host):
-        return ScanResult(module="port_scan", error="O host do alvo é interno/privado; o scan foi recusado")
+        return ScanResult(module="port_scan", error="Target host is internal/private; scan refused")
 
     try:
         semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
@@ -83,7 +83,7 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
             timeout=timeout,
         )
     except asyncio.TimeoutError:
-        return ScanResult(module="port_scan", error="A varredura de portas expirou")
+        return ScanResult(module="port_scan", error="Port scan timed out")
     except Exception as e:
         return ScanResult(module="port_scan", error=str(e))
 
@@ -95,8 +95,8 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
         severity = _severity_for_port(port)
         if severity == Severity.informational:
             findings.append(Finding(
-                title=f"Porta Aberta {port} ({service})",
-                description=f"A porta {port}/tcp ({service}) está acessível pela internet.",
+                title=f"Open Port {port} ({service})",
+                description=f"Port {port}/tcp ({service}) is reachable from the internet.",
                 severity=severity,
                 category="Network Exposure",
                 module="port_scan",
@@ -105,11 +105,11 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
             ))
         else:
             findings.append(Finding(
-                title=f"Serviço Exposto: {service} (porta {port})",
+                title=f"Exposed Service: {service} (port {port})",
                 description=(
-                    f"A porta {port}/tcp ({service}) está acessível pela internet. "
-                    "Serviços de banco de dados, administração remota e legados não devem ser "
-                    "expostos diretamente; isso aumenta a superfície de ataque."
+                    f"Port {port}/tcp ({service}) is reachable from the internet. "
+                    "Database, remote-administration, and legacy services should not be "
+                    "directly exposed; this increases the attack surface."
                 ),
                 severity=severity,
                 category="Network Exposure",
@@ -117,16 +117,16 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                 affected_url=host,
                 evidence={"port": port, "service": service},
                 recommendation=(
-                    f"Restrinja o acesso à porta {port} a redes confiáveis (VPN/firewall/security group) "
-                    "ou desabilite o serviço completamente se não for necessário."
+                    f"Restrict access to port {port} to trusted networks (VPN/firewall/security group) "
+                    "or disable the service entirely if not required."
                 ),
                 owasp_category="A05:2021 – Security Misconfiguration",
             ))
 
     if not findings:
         findings.append(Finding(
-            title="Nenhuma Porta Comumente Exposta Detectada",
-            description=f"Nenhuma das {len(COMMON_PORTS)} portas comumente testadas respondeu.",
+            title="No Commonly Exposed Ports Detected",
+            description=f"None of the {len(COMMON_PORTS)} commonly probed ports responded.",
             severity=Severity.informational,
             category="Network Exposure",
             module="port_scan",

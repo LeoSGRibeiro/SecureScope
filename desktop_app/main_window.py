@@ -9,6 +9,7 @@ from PySide6.QtGui import QColor, QFont
 from scan_worker import ScanWorker
 from security_utils import is_blocked_target, SEVERITY_COLORS, SEVERITY_ORDER
 from export_utils import export_csv, export_pdf
+from translations import translate_finding
 
 MODULES = ["headers", "tls", "cookies", "cors", "fingerprint", "subdomains", "owasp", "port_scan"]
 
@@ -148,6 +149,7 @@ class MainWindow(QMainWindow):
         self.worker: ScanWorker | None = None
         self.last_result: dict | None = None
         self.last_url: str = ""
+        self.translated: bool = False
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -208,6 +210,11 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.table)
 
         export_row = QHBoxLayout()
+        self.translate_button = QPushButton("Traduzir para PT-BR")
+        self.translate_button.setObjectName("SecondaryButton")
+        self.translate_button.setEnabled(False)
+        self.translate_button.clicked.connect(self.toggle_translation)
+        export_row.addWidget(self.translate_button)
         export_row.addStretch()
         self.export_csv_button = QPushButton("Exportar CSV")
         self.export_csv_button.setObjectName("SecondaryButton")
@@ -247,6 +254,9 @@ class MainWindow(QMainWindow):
         self.url_input.setEnabled(False)
         self.export_csv_button.setEnabled(False)
         self.export_pdf_button.setEnabled(False)
+        self.translate_button.setEnabled(False)
+        self.translated = False
+        self.translate_button.setText("Traduzir para PT-BR")
         self.last_result = None
         self.last_url = url
         self.status_bar.showMessage(f"Escaneando {url}...")
@@ -263,10 +273,18 @@ class MainWindow(QMainWindow):
         if result.get("findings"):
             self.export_csv_button.setEnabled(True)
             self.export_pdf_button.setEnabled(True)
+            self.translate_button.setEnabled(True)
+        self.render_table()
+
+    def render_table(self):
+        result = self.last_result or {}
         findings = sorted(
             result.get("findings", []),
             key=lambda f: SEVERITY_ORDER.index(f["severity"]) if f["severity"] in SEVERITY_ORDER else len(SEVERITY_ORDER),
         )
+        if self.translated:
+            findings = [translate_finding(f) for f in findings]
+
         self.table.setRowCount(len(findings))
         for row, finding in enumerate(findings):
             severity = finding.get("severity", "informational")
@@ -292,11 +310,23 @@ class MainWindow(QMainWindow):
             f"Concluído — risk_score: {risk_score} | duração: {duration_ms} ms | achados: {len(findings)}"
         )
 
+    def toggle_translation(self):
+        self.translated = not self.translated
+        self.translate_button.setText("Ver em inglês" if self.translated else "Traduzir para PT-BR")
+        self.render_table()
+
     def on_scan_error(self, message: str):
         self.scan_button.setEnabled(True)
         self.url_input.setEnabled(True)
         self.status_bar.showMessage("Falha no scan.")
         QMessageBox.critical(self, "Erro no scan", message)
+
+    def _result_for_export(self) -> dict:
+        if not self.translated:
+            return self.last_result
+        result = dict(self.last_result)
+        result["findings"] = [translate_finding(f) for f in result.get("findings", [])]
+        return result
 
     def export_csv_clicked(self):
         if not self.last_result:
@@ -305,7 +335,7 @@ class MainWindow(QMainWindow):
         if not path:
             return
         try:
-            export_csv(self.last_result, path)
+            export_csv(self._result_for_export(), path)
             self.status_bar.showMessage(f"CSV exportado: {path}")
         except Exception as e:
             QMessageBox.critical(self, "Erro ao exportar CSV", str(e))
@@ -317,7 +347,7 @@ class MainWindow(QMainWindow):
         if not path:
             return
         try:
-            export_pdf(self.last_result, self.last_url, path)
+            export_pdf(self._result_for_export(), self.last_url, path)
             self.status_bar.showMessage(f"PDF exportado: {path}")
         except Exception as e:
             QMessageBox.critical(self, "Erro ao exportar PDF", str(e))

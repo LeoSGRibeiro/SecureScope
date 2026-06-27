@@ -11,20 +11,20 @@ from app.services.scanners.base import Finding, ScanResult, Severity
 
 # Error patterns suggesting verbose error disclosure
 ERROR_PATTERNS = [
-    (r"SQL syntax.*MySQL", "Erro de SQL do MySQL Exposto", Severity.high, "A03:2021 – Injection"),
-    (r"Warning:.*mysql_", "Warning PHP do MySQL Exposto", Severity.high, "A03:2021 – Injection"),
-    (r"ORA-[0-9]{5}", "Erro do Banco Oracle Exposto", Severity.high, "A03:2021 – Injection"),
-    (r"Microsoft OLE DB.*SQL Server", "Erro do MSSQL OLE DB Exposto", Severity.high, "A03:2021 – Injection"),
-    (r"SQLSTATE\[", "Erro de SQL State Exposto", Severity.high, "A03:2021 – Injection"),
-    (r"Traceback \(most recent call last\)", "Stack Trace do Python Exposto", Severity.medium, "A05:2021 – Security Misconfiguration"),
-    (r"at .+\(.*\.java:\d+\)", "Stack Trace do Java Exposto", Severity.medium, "A05:2021 – Security Misconfiguration"),
-    (r"Exception in thread", "Exceção do Java Exposta", Severity.medium, "A05:2021 – Security Misconfiguration"),
-    (r"Parse error:.*in .*on line", "Erro de Parse do PHP Exposto", Severity.medium, "A05:2021 – Security Misconfiguration"),
-    (r"Notice:.*Undefined variable", "Notice do PHP Exposto", Severity.low, "A05:2021 – Security Misconfiguration"),
-    (r"Fatal error:.*in .*on line", "Erro Fatal do PHP Exposto", Severity.high, "A05:2021 – Security Misconfiguration"),
-    (r"\bpassword\b.*=.*\S+", "Possível Credencial no Corpo da Resposta", Severity.critical, "A02:2021 – Cryptographic Failures"),
-    (r"api[_-]?key.*[:=].*[A-Za-z0-9]{16,}", "Chave de API Exposta na Resposta", Severity.critical, "A02:2021 – Cryptographic Failures"),
-    (r"Authorization: Bearer [A-Za-z0-9\-_\.]+", "Token Bearer Exposto no Corpo da Resposta", Severity.critical, "A02:2021 – Cryptographic Failures"),
+    (r"SQL syntax.*MySQL", "MySQL SQL Error Disclosed", Severity.high, "A03:2021 – Injection"),
+    (r"Warning:.*mysql_", "MySQL PHP Warning Exposed", Severity.high, "A03:2021 – Injection"),
+    (r"ORA-[0-9]{5}", "Oracle Database Error Disclosed", Severity.high, "A03:2021 – Injection"),
+    (r"Microsoft OLE DB.*SQL Server", "MSSQL OLE DB Error Disclosed", Severity.high, "A03:2021 – Injection"),
+    (r"SQLSTATE\[", "SQL State Error Disclosed", Severity.high, "A03:2021 – Injection"),
+    (r"Traceback \(most recent call last\)", "Python Stack Trace Disclosed", Severity.medium, "A05:2021 – Security Misconfiguration"),
+    (r"at .+\(.*\.java:\d+\)", "Java Stack Trace Disclosed", Severity.medium, "A05:2021 – Security Misconfiguration"),
+    (r"Exception in thread", "Java Exception Disclosed", Severity.medium, "A05:2021 – Security Misconfiguration"),
+    (r"Parse error:.*in .*on line", "PHP Parse Error Disclosed", Severity.medium, "A05:2021 – Security Misconfiguration"),
+    (r"Notice:.*Undefined variable", "PHP Notice Disclosed", Severity.low, "A05:2021 – Security Misconfiguration"),
+    (r"Fatal error:.*in .*on line", "PHP Fatal Error Disclosed", Severity.high, "A05:2021 – Security Misconfiguration"),
+    (r"\bpassword\b.*=.*\S+", "Possible Credential in Response Body", Severity.critical, "A02:2021 – Cryptographic Failures"),
+    (r"api[_-]?key.*[:=].*[A-Za-z0-9]{16,}", "API Key Exposed in Response", Severity.critical, "A02:2021 – Cryptographic Failures"),
+    (r"Authorization: Bearer [A-Za-z0-9\-_\.]+", "Bearer Token in Response Body", Severity.critical, "A02:2021 – Cryptographic Failures"),
 ]
 
 # Patterns for reflected content in response that may indicate XSS reflection points
@@ -36,21 +36,21 @@ XSS_INDICATORS = [
 ]
 
 SENSITIVE_FILE_PATHS = [
-    ("/.git/HEAD", "Repositório Git Exposto"),
-    ("/.env", "Arquivo .env Exposto"),
-    ("/config.php", "Arquivo de Configuração PHP Exposto"),
-    ("/wp-config.php", "Configuração do WordPress Exposta"),
-    ("/configuration.php", "Configuração do Joomla Exposta"),
-    ("/settings.py", "Settings do Django Exposto"),
-    ("/web.config", "web.config do ASP.NET Exposto"),
-    ("/composer.json", "Manifesto Composer do PHP Exposto"),
-    ("/package.json", "Manifesto de Pacotes Node.js Exposto"),
-    ("/Dockerfile", "Dockerfile Exposto"),
-    ("/docker-compose.yml", "Docker Compose Exposto"),
-    ("/backup.sql", "Backup SQL Exposto"),
-    ("/dump.sql", "Dump SQL Exposto"),
-    ("/robots.txt", "robots.txt (informativo)"),
-    ("/sitemap.xml", "sitemap.xml (informativo)"),
+    ("/.git/HEAD", "Git Repository Exposed"),
+    ("/.env", ".env File Exposed"),
+    ("/config.php", "PHP Config File Exposed"),
+    ("/wp-config.php", "WordPress Config Exposed"),
+    ("/configuration.php", "Joomla Config Exposed"),
+    ("/settings.py", "Django Settings Exposed"),
+    ("/web.config", "ASP.NET web.config Exposed"),
+    ("/composer.json", "PHP Composer Manifest Exposed"),
+    ("/package.json", "Node.js Package Manifest Exposed"),
+    ("/Dockerfile", "Dockerfile Exposed"),
+    ("/docker-compose.yml", "Docker Compose Exposed"),
+    ("/backup.sql", "SQL Backup File Exposed"),
+    ("/dump.sql", "SQL Dump Exposed"),
+    ("/robots.txt", "robots.txt (informational)"),
+    ("/sitemap.xml", "sitemap.xml (informational)"),
 ]
 
 
@@ -79,13 +79,13 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                     raw["error_patterns"].append(title)
                     findings.append(Finding(
                         title=title,
-                        description=f"O corpo da resposta contém um padrão que sugere vazamento de informações: '{snippet[:80]}...'",
+                        description=f"Response body contains a pattern suggesting information leakage: '{snippet[:80]}...'",
                         severity=sev,
                         category="Information Disclosure",
                         module="owasp",
                         affected_url=url,
                         evidence={"pattern": pattern, "snippet": snippet},
-                        recommendation="Suprima mensagens de erro detalhadas em produção. Utilize páginas de erro genéricas.",
+                        recommendation="Suppress verbose error messages in production. Use generic error pages.",
                         owasp_category=owasp,
                     ))
 
@@ -93,28 +93,28 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
             for xss_pat in XSS_INDICATORS:
                 if re.search(xss_pat, body, re.IGNORECASE):
                     findings.append(Finding(
-                        title="Possível Indicador de XSS Refletido na Resposta",
-                        description="O corpo da resposta contém padrões associados a payloads de cross-site scripting. Verificação manual é necessária.",
+                        title="Possible Reflected XSS Indicator in Response",
+                        description="Response body contains patterns associated with cross-site scripting payloads. Manual verification required.",
                         severity=Severity.medium,
                         category="XSS Indicators",
                         module="owasp",
                         affected_url=url,
                         evidence={"pattern": xss_pat},
-                        recommendation="Revise a codificação de saída e implemente um CSP estrito. Nenhum teste ativo foi realizado.",
+                        recommendation="Review output encoding and implement a strict CSP. No active testing was performed.",
                         owasp_category="A03:2021 – Injection",
                     ))
 
             # Directory listing detection
             if "Index of /" in body or "Directory listing" in body.lower():
                 findings.append(Finding(
-                    title="Listagem de Diretório Habilitada",
-                    description="O servidor web está expondo uma listagem de diretório, revelando a estrutura de arquivos.",
+                    title="Directory Listing Enabled",
+                    description="The web server is exposing a directory listing, which reveals file structure.",
                     severity=Severity.medium,
                     category="Information Disclosure",
                     module="owasp",
                     affected_url=url,
-                    evidence={"indicator": "Listagem de diretório detectada no corpo da resposta"},
-                    recommendation="Desabilite a listagem de diretório na configuração do servidor web.",
+                    evidence={"indicator": "Directory listing detected in response body"},
+                    recommendation="Disable directory listing in the web server configuration.",
                     owasp_category="A05:2021 – Security Misconfiguration",
                 ))
 
@@ -128,14 +128,14 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                         http_resources.append(src[:100])
                 if http_resources:
                     findings.append(Finding(
-                        title="Conteúdo Misto Detectado",
-                        description=f"A página HTTPS carrega {len(http_resources)} recurso(s) via HTTP.",
+                        title="Mixed Content Detected",
+                        description=f"HTTPS page loads {len(http_resources)} resource(s) over HTTP.",
                         severity=Severity.medium,
                         category="Mixed Content",
                         module="owasp",
                         affected_url=url,
                         evidence={"http_resources": http_resources[:10]},
-                        recommendation="Sirva todos os recursos via HTTPS.",
+                        recommendation="Serve all resources over HTTPS.",
                         owasp_category="A02:2021 – Cryptographic Failures",
                     ))
 
@@ -144,14 +144,14 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
             inline_events = soup.find_all(attrs=re.compile(r"^on\w+"))
             if len(inline_events) > 5:
                 findings.append(Finding(
-                    title=f"Alto Número de Manipuladores de Eventos Inline ({len(inline_events)})",
-                    description="Foi detectado um grande número de manipuladores de eventos JavaScript inline. Eles podem contornar o CSP.",
+                    title=f"High Number of Inline Event Handlers ({len(inline_events)})",
+                    description="Large number of inline JavaScript event handlers detected. These can bypass CSP.",
                     severity=Severity.low,
                     category="XSS Indicators",
                     module="owasp",
                     affected_url=url,
                     evidence={"count": len(inline_events)},
-                    recommendation="Mova os manipuladores de eventos para scripts externos e utilize um CSP estrito.",
+                    recommendation="Move event handlers to external scripts and use a strict CSP.",
                 ))
 
             # Hidden form inputs (potential CSRF token presence check)
@@ -167,14 +167,14 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                 method = form.get("method", "get").upper()
                 if method == "POST" and not token_found:
                     findings.append(Finding(
-                        title="Formulário POST Sem Token CSRF Aparente",
-                        description=f"Um formulário POST (action: {action}) não possui um campo de token CSRF detectável.",
+                        title="POST Form Without Apparent CSRF Token",
+                        description=f"A POST form (action: {action}) has no detectable CSRF token field.",
                         severity=Severity.medium,
                         category="CSRF",
                         module="owasp",
                         affected_url=url,
                         evidence={"form_action": action, "method": method},
-                        recommendation="Adicione token CSRF a todos os formulários POST que alteram estado.",
+                        recommendation="Add CSRF token to all state-changing POST forms.",
                         owasp_category="A01:2021 – Broken Access Control",
                     ))
 
@@ -189,20 +189,20 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                         raw["exposed_files"].append({"path": path, "status": 200})
                         findings.append(Finding(
                             title=f"{desc} — HTTP 200",
-                            description=f"O arquivo '{path}' está publicamente acessível e pode expor informações sensíveis.",
+                            description=f"File '{path}' is publicly accessible and may expose sensitive information.",
                             severity=sev,
                             category="Information Disclosure",
                             module="owasp",
                             affected_url=f"{base}{path}",
                             evidence={"path": path, "snippet": content_snippet[:200]},
-                            recommendation=f"Restrinja o acesso a '{path}'. Remova-o da raiz pública do servidor se não for necessário.",
+                            recommendation=f"Restrict access to '{path}'. Remove from public web root if not needed.",
                             owasp_category="A05:2021 – Security Misconfiguration",
                         ))
                 except Exception:
                     pass
 
     except httpx.TimeoutException:
-        return ScanResult(module="owasp", error=f"A requisição expirou após {timeout}s")
+        return ScanResult(module="owasp", error=f"Request timed out after {timeout}s")
     except httpx.RequestError as e:
         return ScanResult(module="owasp", error=str(e))
 

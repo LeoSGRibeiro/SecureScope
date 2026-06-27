@@ -164,14 +164,14 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
 
             if detected_tech:
                 findings.append(Finding(
-                    title="Tecnologias Identificadas",
-                    description=f"Detectado: {', '.join(detected_tech)}",
+                    title="Technologies Fingerprinted",
+                    description=f"Detected: {', '.join(detected_tech)}",
                     severity=Severity.informational,
                     category="Fingerprint",
                     module="fingerprint",
                     affected_url=url,
                     evidence={"technologies": detected_tech, "server": server},
-                    recommendation="Verifique se as versões das tecnologias detectadas estão atualizadas.",
+                    recommendation="Review whether detected technology versions are up-to-date.",
                 ))
 
             # Check for outdated libraries in HTML
@@ -179,14 +179,14 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                 m = re.search(pattern, body, re.IGNORECASE)
                 if m and condition(m):
                     findings.append(Finding(
-                        title=f"Biblioteca Possivelmente Desatualizada: {lib_name}",
-                        description=f"Uma versão antiga de {lib_name.split(' ')[0]} foi detectada no código-fonte da página.",
+                        title=f"Potentially Outdated Library: {lib_name}",
+                        description=f"An older version of {lib_name.split(' ')[0]} was detected in the page source.",
                         severity=Severity.medium,
                         category="Fingerprint",
                         module="fingerprint",
                         affected_url=url,
                         evidence={"match": m.group(0)},
-                        recommendation=f"Atualize {lib_name.split(' ')[0]} para a versão estável mais recente.",
+                        recommendation=f"Upgrade {lib_name.split(' ')[0]} to the latest stable version.",
                         owasp_category="A06:2021 – Vulnerable and Outdated Components",
                         cve=OUTDATED_CVE.get(lib_name, ""),
                     ))
@@ -197,14 +197,14 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
             if generator:
                 content = generator.get("content", "")
                 findings.append(Finding(
-                    title=f"Meta Tag Generator Expõe Tecnologia: {content}",
-                    description="A tag <meta name='generator'> revela a versão do CMS/plataforma para reconhecimento.",
+                    title=f"Generator Meta Tag Discloses Technology: {content}",
+                    description="The <meta name='generator'> tag reveals CMS/platform version to reconnaissance.",
                     severity=Severity.low,
                     category="Information Disclosure",
                     module="fingerprint",
                     affected_url=url,
                     evidence={"generator": content},
-                    recommendation="Remova a meta tag generator do HTML público.",
+                    recommendation="Remove the generator meta tag from public-facing HTML.",
                     owasp_category="A05:2021 – Security Misconfiguration",
                 ))
 
@@ -217,21 +217,21 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                         sev = Severity.high if probe.status_code == 200 else Severity.medium
                         raw["exposed_paths"].append({"path": path, "status": probe.status_code})
                         findings.append(Finding(
-                            title=f"Caminho Sensível Acessível: {path} (HTTP {probe.status_code})",
-                            description=f"O caminho {path} retornou HTTP {probe.status_code}.",
+                            title=f"Sensitive Path Accessible: {path} (HTTP {probe.status_code})",
+                            description=f"Path {path} returned HTTP {probe.status_code}.",
                             severity=sev,
                             category="Information Disclosure",
                             module="fingerprint",
                             affected_url=f"{base}{path}",
                             evidence={"path": path, "status": probe.status_code},
-                            recommendation=f"Restrinja o acesso a {path} ou remova-o do ambiente de produção.",
+                            recommendation=f"Restrict access to {path} or remove it from production.",
                             owasp_category="A05:2021 – Security Misconfiguration",
                         ))
                 except Exception:
                     pass
 
     except httpx.TimeoutException:
-        return ScanResult(module="fingerprint", error=f"A requisição expirou após {timeout}s")
+        return ScanResult(module="fingerprint", error=f"Request timed out after {timeout}s")
     except httpx.RequestError as e:
         return ScanResult(module="fingerprint", error=str(e))
 

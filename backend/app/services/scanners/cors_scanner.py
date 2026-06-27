@@ -50,57 +50,57 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                     if acao == "*":
                         if acac.lower() == "true":
                             findings.append(Finding(
-                                title="CORS com Origem Wildcard e Credenciais Permitidas",
-                                description="ACAO: * combinado com ACAC: true é rejeitado pelos navegadores, mas indica uma má configuração.",
+                                title="CORS Wildcard Origin With Credentials Allowed",
+                                description="ACAO: * combined with ACAC: true is rejected by browsers but indicates misconfiguration.",
                                 severity=Severity.medium,
                                 category="CORS",
                                 module="cors",
                                 affected_url=url,
                                 evidence={"acao": acao, "acac": acac, "origin_probe": origin},
-                                recommendation="Não combine origem wildcard com credenciais. Especifique origens explícitas.",
+                                recommendation="Do not combine wildcard origin with credentials. Specify explicit origins.",
                                 owasp_category="A01:2021 – Broken Access Control",
                                 references=["https://portswigger.net/web-security/cors"],
                             ))
                         else:
                             findings.append(Finding(
-                                title="CORS com Origem Wildcard (Access-Control-Allow-Origin: *)",
-                                description="Qualquer origem pode ler as respostas. Aceitável para APIs públicas; arriscado para endpoints autenticados.",
+                                title="CORS Wildcard Origin (Access-Control-Allow-Origin: *)",
+                                description="Any origin can read responses. Acceptable for public APIs; risky for authenticated endpoints.",
                                 severity=Severity.low,
                                 category="CORS",
                                 module="cors",
                                 affected_url=url,
                                 evidence={"acao": acao},
-                                recommendation="Restrinja o ACAO a origens confiáveis em endpoints autenticados ou sensíveis.",
+                                recommendation="Restrict ACAO to trusted origins for authenticated or sensitive endpoints.",
                             ))
 
                     elif acao == origin and origin != "null":
                         sev = Severity.high if acac.lower() == "true" else Severity.medium
                         findings.append(Finding(
-                            title=f"CORS Reflete Origem Arbitrária{' + Credenciais' if acac.lower() == 'true' else ''}",
+                            title=f"CORS Reflects Arbitrary Origin{'  + Credentials' if acac.lower() == 'true' else ''}",
                             description=(
-                                f"O servidor refletiu a origem de teste '{origin}' no cabeçalho ACAO"
-                                + (" e permite credenciais, possibilitando requisições autenticadas cross-origin." if acac.lower() == "true" else ".")
+                                f"Server reflected the probe origin '{origin}' in ACAO header"
+                                + (" and allows credentials, enabling cross-origin authenticated requests." if acac.lower() == "true" else ".")
                             ),
                             severity=sev,
                             category="CORS",
                             module="cors",
                             affected_url=url,
                             evidence={"acao": acao, "acac": acac, "origin_probe": origin},
-                            recommendation="Valide o Origin contra uma lista de permissões estrita. Nunca reflita origens arbitrárias.",
+                            recommendation="Validate Origin against a strict allowlist. Never reflect arbitrary origins.",
                             owasp_category="A01:2021 – Broken Access Control",
                             references=["https://portswigger.net/web-security/cors"],
                         ))
 
                     elif acao == "null":
                         findings.append(Finding(
-                            title="CORS Permite Origem 'null'",
-                            description="O servidor aceita a origem 'null', que pode ser disparada a partir de iframes em sandbox.",
+                            title="CORS Allows 'null' Origin",
+                            description="Server accepts 'null' origin which can be triggered from sandboxed iframes.",
                             severity=Severity.medium,
                             category="CORS",
                             module="cors",
                             affected_url=url,
                             evidence={"acao": acao},
-                            recommendation="Não permita a origem 'null' na política de CORS.",
+                            recommendation="Do not allow 'null' origin in CORS policy.",
                             owasp_category="A01:2021 – Broken Access Control",
                         ))
 
@@ -110,14 +110,14 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                     exposed_dangerous = dangerous & allowed_methods
                     if exposed_dangerous:
                         findings.append(Finding(
-                            title=f"CORS Permite Métodos Perigosos: {', '.join(exposed_dangerous)}",
-                            description=f"Os seguintes métodos HTTP são permitidos cross-origin: {', '.join(exposed_dangerous)}",
+                            title=f"CORS Allows Dangerous Methods: {', '.join(exposed_dangerous)}",
+                            description=f"The following HTTP methods are permitted cross-origin: {', '.join(exposed_dangerous)}",
                             severity=Severity.medium,
                             category="CORS",
                             module="cors",
                             affected_url=url,
                             evidence={"allowed_methods": acam},
-                            recommendation="Restrinja os métodos permitidos no CORS ao mínimo necessário.",
+                            recommendation="Restrict allowed CORS methods to the minimum required.",
                         ))
 
                 except Exception:
@@ -137,8 +137,8 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
 
     if not findings:
         findings.append(Finding(
-            title="Política de CORS Aparenta Ser Restritiva",
-            description="Nenhuma má configuração perigosa de CORS foi detectada com os testes padrão.",
+            title="CORS Policy Appears Restrictive",
+            description="No dangerous CORS misconfigurations detected with standard probes.",
             severity=Severity.informational,
             category="CORS",
             module="cors",

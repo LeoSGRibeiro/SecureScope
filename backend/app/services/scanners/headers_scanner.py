@@ -8,67 +8,67 @@ from app.services.scanners.base import Finding, ScanResult, Severity
 
 REQUIRED_HEADERS = {
     "strict-transport-security": {
-        "title": "Cabeçalho HSTS Ausente",
+        "title": "Missing HSTS Header",
         "severity": Severity.high,
         "owasp": "A05:2021 – Security Misconfiguration",
-        "recommendation": "Adicione 'Strict-Transport-Security: max-age=31536000; includeSubDomains; preload'",
+        "recommendation": "Add 'Strict-Transport-Security: max-age=31536000; includeSubDomains; preload'",
         "refs": ["https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security"],
     },
     "content-security-policy": {
-        "title": "Cabeçalho Content-Security-Policy Ausente",
+        "title": "Missing Content-Security-Policy Header",
         "severity": Severity.high,
         "owasp": "A03:2021 – Injection",
-        "recommendation": "Defina uma política de CSP estrita para mitigar ataques de XSS e injeção de dados.",
+        "recommendation": "Define a strict CSP policy to mitigate XSS and data injection attacks.",
         "refs": ["https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy"],
     },
     "x-frame-options": {
-        "title": "Cabeçalho X-Frame-Options Ausente",
+        "title": "Missing X-Frame-Options Header",
         "severity": Severity.medium,
         "owasp": "A05:2021 – Security Misconfiguration",
-        "recommendation": "Adicione 'X-Frame-Options: DENY' ou 'SAMEORIGIN' para prevenir clickjacking.",
+        "recommendation": "Add 'X-Frame-Options: DENY' or 'SAMEORIGIN' to prevent clickjacking.",
         "refs": ["https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options"],
     },
     "x-content-type-options": {
-        "title": "Cabeçalho X-Content-Type-Options Ausente",
+        "title": "Missing X-Content-Type-Options Header",
         "severity": Severity.low,
         "owasp": "A05:2021 – Security Misconfiguration",
-        "recommendation": "Adicione 'X-Content-Type-Options: nosniff'",
+        "recommendation": "Add 'X-Content-Type-Options: nosniff'",
         "refs": ["https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options"],
     },
     "referrer-policy": {
-        "title": "Cabeçalho Referrer-Policy Ausente",
+        "title": "Missing Referrer-Policy Header",
         "severity": Severity.low,
         "owasp": "A05:2021 – Security Misconfiguration",
-        "recommendation": "Adicione 'Referrer-Policy: strict-origin-when-cross-origin'",
+        "recommendation": "Add 'Referrer-Policy: strict-origin-when-cross-origin'",
         "refs": ["https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy"],
     },
     "permissions-policy": {
-        "title": "Cabeçalho Permissions-Policy Ausente",
+        "title": "Missing Permissions-Policy Header",
         "severity": Severity.informational,
         "owasp": "A05:2021 – Security Misconfiguration",
-        "recommendation": "Adicione Permissions-Policy para restringir o acesso a recursos do navegador.",
+        "recommendation": "Add Permissions-Policy to restrict browser feature access.",
         "refs": ["https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy"],
     },
 }
 
 INSECURE_HEADERS = {
     "server": {
-        "title": "Exposição da Versão do Servidor via Cabeçalho 'Server'",
+        "title": "Server Version Disclosure via 'Server' Header",
         "severity": Severity.low,
         "owasp": "A05:2021 – Security Misconfiguration",
-        "recommendation": "Remova ou anonimize o cabeçalho Server para evitar fingerprinting de tecnologia.",
+        "recommendation": "Remove or anonymize the Server header to prevent technology fingerprinting.",
     },
     "x-powered-by": {
-        "title": "Exposição de Tecnologia via Cabeçalho 'X-Powered-By'",
+        "title": "Technology Disclosure via 'X-Powered-By' Header",
         "severity": Severity.low,
         "owasp": "A05:2021 – Security Misconfiguration",
-        "recommendation": "Remova o cabeçalho X-Powered-By.",
+        "recommendation": "Remove the X-Powered-By header.",
     },
     "x-aspnet-version": {
-        "title": "Versão do ASP.NET Exposta",
+        "title": "ASP.NET Version Disclosed",
         "severity": Severity.medium,
         "owasp": "A05:2021 – Security Misconfiguration",
-        "recommendation": "Desabilite a exposição de versão na configuração do ASP.NET.",
+        "recommendation": "Disable version disclosure in ASP.NET configuration.",
     },
 }
 
@@ -96,9 +96,9 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
             if header_name not in headers:
                 findings.append(Finding(
                     title=meta["title"],
-                    description=f"O cabeçalho '{header_name}' está ausente na resposta HTTP.",
+                    description=f"The header '{header_name}' is absent from the HTTP response.",
                     severity=meta["severity"],
-                    category="Cabeçalhos de Segurança HTTP",
+                    category="HTTP Security Headers",
                     module="headers",
                     affected_url=url,
                     evidence={"missing_header": header_name, "response_headers": dict(raw["headers"])},
@@ -112,28 +112,28 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
         if hsts_val:
             if "max-age" not in hsts_val:
                 findings.append(Finding(
-                    title="Cabeçalho HSTS Sem max-age",
-                    description="O cabeçalho HSTS está presente, mas não possui a diretiva max-age.",
+                    title="HSTS Header Missing max-age",
+                    description="HSTS header is present but lacks max-age directive.",
                     severity=Severity.medium,
-                    category="Cabeçalhos de Segurança HTTP",
+                    category="HTTP Security Headers",
                     module="headers",
                     affected_url=url,
                     evidence={"header_value": hsts_val},
-                    recommendation="Inclua 'max-age=31536000' no cabeçalho HSTS.",
+                    recommendation="Include 'max-age=31536000' in HSTS header.",
                     owasp_category="A05:2021 – Security Misconfiguration",
                 ))
             try:
                 max_age = int([p for p in hsts_val.split(";") if "max-age" in p][0].split("=")[1].strip())
                 if max_age < 15768000:
                     findings.append(Finding(
-                        title="HSTS max-age Muito Curto",
-                        description=f"O max-age do HSTS é {max_age}s (< 6 meses). Recomenda-se ≥ 31536000s.",
+                        title="HSTS max-age Too Short",
+                        description=f"HSTS max-age is {max_age}s (< 6 months). Recommend ≥ 31536000s.",
                         severity=Severity.low,
-                        category="Cabeçalhos de Segurança HTTP",
+                        category="HTTP Security Headers",
                         module="headers",
                         affected_url=url,
                         evidence={"max_age": max_age},
-                        recommendation="Defina o max-age para pelo menos 31536000 (1 ano).",
+                        recommendation="Set max-age to at least 31536000 (1 year).",
                     ))
             except Exception:
                 pass
@@ -143,38 +143,38 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
         if csp:
             if "unsafe-inline" in csp:
                 findings.append(Finding(
-                    title="CSP Permite 'unsafe-inline'",
-                    description="O Content-Security-Policy contém 'unsafe-inline', o que reduz a proteção contra XSS.",
+                    title="CSP Allows 'unsafe-inline'",
+                    description="Content-Security-Policy contains 'unsafe-inline', weakening XSS protection.",
                     severity=Severity.medium,
-                    category="Cabeçalhos de Segurança HTTP",
+                    category="HTTP Security Headers",
                     module="headers",
                     affected_url=url,
                     evidence={"csp": csp},
-                    recommendation="Remova 'unsafe-inline' e utilize nonces ou hashes no lugar.",
+                    recommendation="Remove 'unsafe-inline' and use nonces or hashes instead.",
                     owasp_category="A03:2021 – Injection",
                 ))
             if "unsafe-eval" in csp:
                 findings.append(Finding(
-                    title="CSP Permite 'unsafe-eval'",
-                    description="O Content-Security-Policy contém 'unsafe-eval', permitindo injeção de scripts.",
+                    title="CSP Allows 'unsafe-eval'",
+                    description="Content-Security-Policy contains 'unsafe-eval', enabling script injection.",
                     severity=Severity.medium,
-                    category="Cabeçalhos de Segurança HTTP",
+                    category="HTTP Security Headers",
                     module="headers",
                     affected_url=url,
                     evidence={"csp": csp},
-                    recommendation="Remova 'unsafe-eval' do CSP.",
+                    recommendation="Remove 'unsafe-eval' from CSP.",
                     owasp_category="A03:2021 – Injection",
                 ))
             if "* " in csp or csp.strip().endswith("*"):
                 findings.append(Finding(
-                    title="CSP Contém Origem Wildcard",
-                    description="A política de CSP utiliza wildcard '*', o que compromete a proteção.",
+                    title="CSP Contains Wildcard Source",
+                    description="CSP policy uses wildcard '*' which undermines protection.",
                     severity=Severity.medium,
-                    category="Cabeçalhos de Segurança HTTP",
+                    category="HTTP Security Headers",
                     module="headers",
                     affected_url=url,
                     evidence={"csp": csp},
-                    recommendation="Substitua origens wildcard por origens específicas e confiáveis.",
+                    recommendation="Replace wildcard sources with specific, trusted origins.",
                 ))
 
         # Check for information-leaking headers
@@ -182,9 +182,9 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
             if h in headers:
                 findings.append(Finding(
                     title=meta["title"],
-                    description=f"O cabeçalho '{h}: {headers[h]}' revela detalhes de tecnologia.",
+                    description=f"Header '{h}: {headers[h]}' reveals technology details.",
                     severity=meta["severity"],
-                    category="Exposição de Informações",
+                    category="Information Disclosure",
                     module="headers",
                     affected_url=url,
                     evidence={"header": h, "value": headers[h]},
@@ -196,18 +196,18 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
         cache = headers.get("cache-control", "")
         if not cache or ("no-store" not in cache and "private" not in cache):
             findings.append(Finding(
-                title="Resposta Potencialmente Cacheável",
-                description="O cabeçalho Cache-Control não impede o cache de conteúdo potencialmente sensível.",
+                title="Potentially Cacheable Response",
+                description="Cache-Control header does not prevent caching of potentially sensitive content.",
                 severity=Severity.informational,
-                category="Cabeçalhos de Segurança HTTP",
+                category="HTTP Security Headers",
                 module="headers",
                 affected_url=url,
-                evidence={"cache_control": cache or "(não definido)"},
-                recommendation="Adicione 'Cache-Control: no-store, private' para páginas sensíveis.",
+                evidence={"cache_control": cache or "(not set)"},
+                recommendation="Add 'Cache-Control: no-store, private' for sensitive pages.",
             ))
 
     except httpx.TimeoutException:
-        return ScanResult(module="headers", error=f"A requisição expirou após {timeout}s")
+        return ScanResult(module="headers", error=f"Request timed out after {timeout}s")
     except httpx.RequestError as e:
         return ScanResult(module="headers", error=str(e))
 

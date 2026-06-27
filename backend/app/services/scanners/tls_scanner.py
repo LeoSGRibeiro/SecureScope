@@ -45,14 +45,14 @@ async def scan(url: str, timeout: int = 10) -> ScanResult:
 
     if parsed.scheme != "https":
         findings.append(Finding(
-            title="Site Não Utiliza HTTPS",
-            description="A URL do alvo utiliza HTTP em vez de HTTPS, transmitindo dados em texto claro.",
+            title="Site Not Using HTTPS",
+            description="The target URL uses HTTP instead of HTTPS, transmitting data in cleartext.",
             severity=Severity.critical,
             category="TLS/SSL",
             module="tls",
             affected_url=url,
             evidence={"scheme": parsed.scheme},
-            recommendation="Force o uso de HTTPS com um certificado TLS válido e redirecione HTTP para HTTPS.",
+            recommendation="Enforce HTTPS with a valid TLS certificate and redirect HTTP to HTTPS.",
             owasp_category="A02:2021 – Cryptographic Failures",
             references=["https://www.ssllabs.com/ssltest/"],
         ))
@@ -68,27 +68,27 @@ async def scan(url: str, timeout: int = 10) -> ScanResult:
         version = info.get("protocol_version", "")
         if version and version in WEAK_PROTOCOLS:
             findings.append(Finding(
-                title=f"Protocolo TLS Obsoleto em Uso: {version}",
-                description=f"O servidor negociou {version}, que é obsoleto e inseguro.",
+                title=f"Deprecated TLS Protocol in Use: {version}",
+                description=f"The server negotiated {version}, which is deprecated and insecure.",
                 severity=Severity.high,
                 category="TLS/SSL",
                 module="tls",
                 affected_url=url,
                 evidence={"protocol": version},
-                recommendation="Desabilite TLS 1.0/1.1 e SSLv2/v3. Utilize no mínimo TLS 1.2, com preferência para TLS 1.3.",
+                recommendation="Disable TLS 1.0/1.1 and SSLv2/v3. Use TLS 1.2 minimum, prefer TLS 1.3.",
                 owasp_category="A02:2021 – Cryptographic Failures",
                 references=["https://tools.ietf.org/html/rfc8996"],
             ))
         elif version in ("TLSv1.2",):
             findings.append(Finding(
-                title="TLS 1.2 em Uso — TLS 1.3 é Preferível",
-                description="TLS 1.2 é seguro, mas o TLS 1.3 oferece melhor desempenho e segurança.",
+                title="TLS 1.2 in Use — TLS 1.3 Preferred",
+                description="TLS 1.2 is secure but TLS 1.3 offers better performance and security.",
                 severity=Severity.informational,
                 category="TLS/SSL",
                 module="tls",
                 affected_url=url,
                 evidence={"protocol": version},
-                recommendation="Habilite o TLS 1.3 no servidor.",
+                recommendation="Enable TLS 1.3 on the server.",
             ))
 
         # Cipher strength
@@ -97,27 +97,27 @@ async def scan(url: str, timeout: int = 10) -> ScanResult:
         for weak in WEAK_CIPHERS:
             if weak in cipher.upper():
                 findings.append(Finding(
-                    title=f"Cifra Fraca Detectada: {cipher}",
-                    description=f"A cifra {cipher} é considerada criptograficamente fraca.",
+                    title=f"Weak Cipher Suite Detected: {cipher}",
+                    description=f"The cipher {cipher} is considered cryptographically weak.",
                     severity=Severity.high,
                     category="TLS/SSL",
                     module="tls",
                     affected_url=url,
                     evidence={"cipher": cipher, "bits": bits},
-                    recommendation="Desabilite cifras fracas. Utilize AES-GCM ou ChaCha20-Poly1305.",
+                    recommendation="Disable weak cipher suites. Use AES-GCM or ChaCha20-Poly1305.",
                     owasp_category="A02:2021 – Cryptographic Failures",
                 ))
                 break
         if bits and bits < 128:
             findings.append(Finding(
-                title="Tamanho de Chave da Cifra Abaixo de 128 bits",
-                description=f"O tamanho da chave da cifra é {bits} bits, o que é insuficiente.",
+                title="Cipher Key Length Below 128 bits",
+                description=f"Cipher key length is {bits} bits, which is insufficient.",
                 severity=Severity.high,
                 category="TLS/SSL",
                 module="tls",
                 affected_url=url,
                 evidence={"bits": bits},
-                recommendation="Utilize cifras com pelo menos 128 bits de chave.",
+                recommendation="Use ciphers with at least 128-bit key length.",
             ))
 
         # Certificate expiry
@@ -133,41 +133,41 @@ async def scan(url: str, timeout: int = 10) -> ScanResult:
 
                     if days_left < 0:
                         findings.append(Finding(
-                            title="Certificado TLS Expirado",
-                            description=f"O certificado expirou há {abs(days_left)} dias.",
+                            title="TLS Certificate Expired",
+                            description=f"Certificate expired {abs(days_left)} days ago.",
                             severity=Severity.critical,
                             category="TLS/SSL",
                             module="tls",
                             affected_url=url,
                             evidence={"not_after": not_after_str, "days_left": days_left},
-                            recommendation="Renove o certificado TLS imediatamente.",
+                            recommendation="Renew the TLS certificate immediately.",
                         ))
                     elif days_left < 14:
                         findings.append(Finding(
-                            title=f"Certificado TLS Expira em {days_left} Dias",
-                            description="O certificado está próximo de expirar — a renovação é urgente.",
+                            title=f"TLS Certificate Expiring in {days_left} Days",
+                            description="Certificate is about to expire — renewal is urgent.",
                             severity=Severity.high,
                             category="TLS/SSL",
                             module="tls",
                             affected_url=url,
                             evidence={"not_after": not_after_str, "days_left": days_left},
-                            recommendation="Renove o certificado TLS antes do vencimento.",
+                            recommendation="Renew TLS certificate before expiry.",
                         ))
                     elif days_left < 30:
                         findings.append(Finding(
-                            title=f"Certificado TLS Expira em Breve ({days_left} dias)",
-                            description="O certificado expirará dentro de 30 dias.",
+                            title=f"TLS Certificate Expiring Soon ({days_left} days)",
+                            description="Certificate will expire within 30 days.",
                             severity=Severity.medium,
                             category="TLS/SSL",
                             module="tls",
                             affected_url=url,
                             evidence={"not_after": not_after_str, "days_left": days_left},
-                            recommendation="Agende a renovação do certificado.",
+                            recommendation="Schedule certificate renewal.",
                         ))
                     else:
                         findings.append(Finding(
-                            title=f"Certificado TLS Válido ({days_left} dias restantes)",
-                            description="O certificado é válido e não está próximo de expirar.",
+                            title=f"TLS Certificate Valid ({days_left} days remaining)",
+                            description="Certificate is valid and not near expiry.",
                             severity=Severity.informational,
                             category="TLS/SSL",
                             module="tls",
@@ -186,25 +186,25 @@ async def scan(url: str, timeout: int = 10) -> ScanResult:
 
             if hostname not in (cn, *san_list) and f"*.{'.'.join(hostname.split('.')[1:])}" not in san_list:
                 findings.append(Finding(
-                    title="Hostname do Certificado Não Corresponde",
-                    description=f"O CN/SAN do certificado não cobre o hostname '{hostname}'.",
+                    title="Certificate Hostname Mismatch",
+                    description=f"Certificate CN/SAN does not cover hostname '{hostname}'.",
                     severity=Severity.high,
                     category="TLS/SSL",
                     module="tls",
                     affected_url=url,
                     evidence={"hostname": hostname, "cn": cn, "san": san_list},
-                    recommendation="Emita um certificado que cubra todos os hostnames do alvo.",
+                    recommendation="Issue a certificate that covers all target hostnames.",
                 ))
 
     except ssl.SSLError as e:
         findings.append(Finding(
-            title="Erro no Handshake TLS",
-            description=f"Erro de SSL durante o handshake: {e}",
+            title="TLS Handshake Error",
+            description=f"SSL error during handshake: {e}",
             severity=Severity.high,
             category="TLS/SSL",
             module="tls",
             affected_url=url,
-            recommendation="Revise a configuração de TLS do servidor.",
+            recommendation="Review server TLS configuration.",
         ))
     except (socket.timeout, ConnectionRefusedError, OSError) as e:
         return ScanResult(module="tls", error=str(e))

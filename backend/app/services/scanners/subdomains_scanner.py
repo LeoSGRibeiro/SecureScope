@@ -106,14 +106,14 @@ async def scan(url: str, timeout: int = 30) -> ScanResult:
 
         if live_subs:
             findings.append(Finding(
-                title=f"{len(live_subs)} Subdomínios Ativos Descobertos",
-                description=f"Logs de certificate transparency e resolução DNS revelaram {len(live_subs)} subdomínios ativos.",
+                title=f"{len(live_subs)} Live Subdomains Discovered",
+                description=f"Certificate transparency logs and DNS resolution revealed {len(live_subs)} live subdomains.",
                 severity=Severity.informational,
                 category="Subdomains",
                 module="subdomains",
                 affected_url=url,
                 evidence={"count": len(live_subs), "subdomains": [s["subdomain"] for s in live_subs[:20]]},
-                recommendation="Revise todos os subdomínios em busca de serviços esquecidos/órfãos. Desative os que não são utilizados.",
+                recommendation="Review all subdomains for forgotten/orphaned services. Decommission unused ones.",
             ))
 
             # Check for dangling CNAME (potential subdomain takeover indicators)
@@ -126,24 +126,24 @@ async def scan(url: str, timeout: int = 30) -> ScanResult:
                     for pattern in dangling_patterns:
                         if pattern in cname:
                             findings.append(Finding(
-                                title=f"Possível Risco de Takeover de Subdomínio: {sub_info['subdomain']}",
+                                title=f"Potential Subdomain Takeover Risk: {sub_info['subdomain']}",
                                 description=(
-                                    f"O subdomínio '{sub_info['subdomain']}' possui um CNAME apontando para '{cname}' "
-                                    f"({pattern}). Se esse recurso não estiver registrado, um takeover pode ser possível."
+                                    f"Subdomain '{sub_info['subdomain']}' has a CNAME pointing to '{cname}' "
+                                    f"({pattern}). If that resource is unclaimed, a takeover may be possible."
                                 ),
                                 severity=Severity.high,
                                 category="Subdomains",
                                 module="subdomains",
                                 affected_url=f"https://{sub_info['subdomain']}",
                                 evidence={"subdomain": sub_info["subdomain"], "cname": cname},
-                                recommendation="Verifique se o destino do CNAME está registrado e sob seu controle. Remova registros DNS órfãos.",
+                                recommendation="Verify the CNAME target is claimed and owned. Remove dangling DNS records.",
                                 owasp_category="A05:2021 – Security Misconfiguration",
                                 references=["https://github.com/EdOverflow/can-i-take-over-xyz"],
                             ))
         else:
             findings.append(Finding(
-                title="Nenhum Subdomínio Ativo Descoberto",
-                description="Nenhum subdomínio resolvível foi encontrado via certificate transparency e DNS passivo.",
+                title="No Live Subdomains Discovered",
+                description="No resolvable subdomains found via certificate transparency and passive DNS.",
                 severity=Severity.informational,
                 category="Subdomains",
                 module="subdomains",
