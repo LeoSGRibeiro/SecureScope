@@ -21,9 +21,6 @@ npm-debug.log*
 desktop_app/*.csv
 desktop_app/*.pdf
 
-# Machine-specific shortcuts (hardcoded absolute paths, not portable)
-*.lnk
-
 # Docker / OS
 .DS_Store
 Thumbs.db
