@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 260" width="680" height="260">
+  <rect x="0" y="0" width="680" height="260" fill="#0f1117"/>
+
+  <g transform="translate(40,30)">
+    <g stroke="#6366f1" stroke-width="7" stroke-linecap="round" fill="none">
+      <path d="M16 50 L16 16 L50 16"/>
+      <path d="M150 16 L184 16 L184 50"/>
+      <path d="M184 150 L184 184 L150 184"/>
+      <path d="M50 184 L16 184 L16 150"/>
+    </g>
+
+    <path d="M100 38
+             C100 38, 150 46, 150 64
+             L150 118
+             C150 152, 126 176, 100 188
+             C74 176, 50 152, 50 118
+             L50 64
+             C50 46, 100 38, 100 38 Z"
+          fill="none" stroke="#6366f1" stroke-width="9" stroke-linejoin="round"/>
+
+    <path d="M68 110 Q100 78 132 110 Q100 142 68 110 Z" fill="#6366f1"/>
+    <circle cx="100" cy="110" r="15" fill="#0f1117"/>
+    <circle cx="106" cy="104" r="4" fill="#a5b4fc"/>
+    <rect x="60" y="106" width="80" height="7" rx="3.5" fill="#a5b4fc"/>
+  </g>
+
+  <text x="270" y="120" font-family="Arial, sans-serif" font-size="56" font-weight="700" fill="#f9fafb">ThreatLens</text>
+  <text x="270" y="160" font-family="Arial, sans-serif" font-size="20" fill="#9ca3af">Enxergando ameaças antes que elas virem incidentes</text>
+</svg>

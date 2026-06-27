@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "ThreatLens — Enxergando ameaças antes que elas virem incidentes",
   description: "Authorized web security analysis and vulnerability assessment platform",
   robots: "noindex,nofollow",
+  icons: { icon: "/icon.svg" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
