@@ -41,12 +41,13 @@ const config: Config = {
         },
         // Severity colors
         severity: {
-          critical: "#ef4444",
-          high: "#f97316",
-          medium: "#eab308",
-          low: "#3b82f6",
-          informational: "#6b7280",
+          critical: "#F43F5E",
+          high: "#FB923C",
+          medium: "#FACC15",
+          low: "#22C55E",
+          informational: "#8B95A7",
         },
+        success: "#22C55E",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -67,8 +68,8 @@ const config: Config = {
         },
       },
       backgroundImage: {
-        "grid-pattern": "linear-gradient(rgba(59,130,246,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.05) 1px, transparent 1px)",
-        "glow-blue": "radial-gradient(circle at 50% 50%, rgba(59,130,246,0.15), transparent 70%)",
+        "grid-pattern": "linear-gradient(rgba(45,212,191,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(45,212,191,0.05) 1px, transparent 1px)",
+        "glow-blue": "radial-gradient(circle at 50% 50%, rgba(45,212,191,0.15), transparent 70%)",
       },
     },
   },

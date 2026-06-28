@@ -19,31 +19,31 @@ export function timeAgo(date: string | null | undefined): string {
 
 export function severityColor(sev: Severity | string): string {
   const map: Record<string, string> = {
-    critical: "text-red-400",
-    high: "text-orange-400",
+    critical: "text-rose-500",
+    high: "text-orange-500",
     medium: "text-yellow-400",
-    low: "text-blue-400",
-    informational: "text-gray-400",
+    low: "text-green-500",
+    informational: "text-slate-400",
   };
-  return map[sev] || "text-gray-400";
+  return map[sev] || "text-slate-400";
 }
 
 export function severityBg(sev: Severity | string): string {
   const map: Record<string, string> = {
-    critical: "bg-red-400/10 border-red-400/30",
-    high: "bg-orange-400/10 border-orange-400/30",
+    critical: "bg-rose-500/10 border-rose-500/30",
+    high: "bg-orange-500/10 border-orange-500/30",
     medium: "bg-yellow-400/10 border-yellow-400/30",
-    low: "bg-blue-400/10 border-blue-400/30",
-    informational: "bg-gray-400/10 border-gray-400/30",
+    low: "bg-green-500/10 border-green-500/30",
+    informational: "bg-slate-400/10 border-slate-400/30",
   };
-  return map[sev] || "bg-gray-400/10 border-gray-400/30";
+  return map[sev] || "bg-slate-400/10 border-slate-400/30";
 }
 
 export function riskScoreColor(score: number): string {
-  if (score >= 80) return "text-emerald-400";
+  if (score >= 80) return "text-green-500";
   if (score >= 60) return "text-yellow-400";
-  if (score >= 40) return "text-orange-400";
-  return "text-red-400";
+  if (score >= 40) return "text-orange-500";
+  return "text-rose-500";
 }
 
 export function riskScoreLabel(score: number): string {
@@ -55,11 +55,11 @@ export function riskScoreLabel(score: number): string {
 
 export function scanStatusColor(status: string): string {
   const map: Record<string, string> = {
-    completed: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30",
-    running: "text-blue-400 bg-blue-400/10 border-blue-400/30",
+    completed: "text-green-500 bg-green-500/10 border-green-500/30",
+    running: "text-teal-400 bg-teal-400/10 border-teal-400/30",
     pending: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30",
-    failed: "text-red-400 bg-red-400/10 border-red-400/30",
-    cancelled: "text-gray-400 bg-gray-400/10 border-gray-400/30",
+    failed: "text-rose-500 bg-rose-500/10 border-rose-500/30",
+    cancelled: "text-slate-400 bg-slate-400/10 border-slate-400/30",
   };
-  return map[status] || "text-gray-400";
+  return map[status] || "text-slate-400";
 }

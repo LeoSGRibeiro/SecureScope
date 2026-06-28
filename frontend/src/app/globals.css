@@ -6,25 +6,32 @@
 
 @layer base {
   :root {
-    --background: 222 47% 4%;
-    --foreground: 210 40% 92%;
-    --card: 222 47% 7%;
-    --card-foreground: 210 40% 92%;
-    --popover: 222 47% 7%;
-    --popover-foreground: 210 40% 92%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 4%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 92%;
-    --muted: 217 33% 12%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 92%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 15%;
-    --input: 217 33% 15%;
-    --ring: 217 91% 60%;
+    /* Identidade Linear/Notion/Tailscale: bg #151A23, cards #202735,
+       primária turquesa #2DD4BF, accent lima #84CC16, texto #F5F7FA,
+       crítico #F43F5E, médio #FACC15, baixo #22C55E */
+    --background: 215 25% 11%;
+    --foreground: 214 29% 97%;
+    --card: 217 25% 17%;
+    --card-foreground: 214 29% 97%;
+    --popover: 217 25% 17%;
+    --popover-foreground: 214 29% 97%;
+    --primary: 172 66% 50%;
+    --primary-foreground: 215 25% 11%;
+    --secondary: 217 25% 17%;
+    --secondary-foreground: 214 29% 97%;
+    --muted: 217 22% 14%;
+    --muted-foreground: 215 15% 65%;
+    --accent: 84 81% 44%;
+    --accent-foreground: 215 25% 11%;
+    --destructive: 350 89% 60%;
+    --destructive-foreground: 214 29% 97%;
+    --border: 217 20% 22%;
+    --input: 217 20% 22%;
+    --ring: 172 66% 50%;
+    --success: 142 69% 49%;
+    --success-foreground: 215 25% 11%;
+    --warning: 48 96% 53%;
+    --warning-foreground: 215 25% 11%;
     --radius: 0.5rem;
   }
 }
@@ -34,8 +41,8 @@
   body {
     @apply bg-background text-foreground font-['Inter',sans-serif];
     background-image:
-      radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.04) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.04) 0%, transparent 50%);
+      radial-gradient(ellipse at 20% 50%, rgba(45,212,191,0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(132,204,22,0.05) 0%, transparent 50%);
   }
   code, pre, .font-mono { font-family: 'JetBrains Mono', monospace; }
 }
@@ -45,13 +52,13 @@
     @apply bg-card/60 backdrop-blur-md border border-border/50;
   }
   .glow-text {
-    text-shadow: 0 0 20px rgba(59,130,246,0.4);
+    text-shadow: 0 0 20px rgba(45,212,191,0.4);
   }
-  .severity-critical { @apply text-red-400 bg-red-400/10 border-red-400/20; }
-  .severity-high     { @apply text-orange-400 bg-orange-400/10 border-orange-400/20; }
+  .severity-critical { @apply text-rose-500 bg-rose-500/10 border-rose-500/20; }
+  .severity-high     { @apply text-orange-500 bg-orange-500/10 border-orange-500/20; }
   .severity-medium   { @apply text-yellow-400 bg-yellow-400/10 border-yellow-400/20; }
-  .severity-low      { @apply text-blue-400 bg-blue-400/10 border-blue-400/20; }
-  .severity-informational { @apply text-gray-400 bg-gray-400/10 border-gray-400/20; }
+  .severity-low      { @apply text-green-500 bg-green-500/10 border-green-500/20; }
+  .severity-informational { @apply text-slate-400 bg-slate-400/10 border-slate-400/20; }
 }
 
 /* Scrollbar */

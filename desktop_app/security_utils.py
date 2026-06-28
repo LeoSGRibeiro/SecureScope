@@ -13,11 +13,11 @@ BLOCKED_HOSTS = {
 }
 
 SEVERITY_COLORS = {
-    "critical": "#f87171",
-    "high": "#fb923c",
-    "medium": "#facc15",
-    "low": "#60a5fa",
-    "informational": "#9ca3af",
+    "critical": "#F43F5E",
+    "high": "#FB923C",
+    "medium": "#FACC15",
+    "low": "#22C55E",
+    "informational": "#8B95A7",
 }
 
 SEVERITY_ORDER = ["critical", "high", "medium", "low", "informational"]

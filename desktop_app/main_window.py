@@ -16,87 +16,87 @@ MODULES = ["headers", "tls", "cookies", "cors", "fingerprint", "subdomains", "ow
 
 STYLESHEET = """
 QMainWindow, QWidget {
-    background-color: #f7f4f1;
-    color: #3a3733;
+    background-color: #151A23;
+    color: #F5F7FA;
     font-family: "Segoe UI", sans-serif;
     font-size: 13px;
 }
 QLabel#HeaderTitle {
     font-size: 21px;
     font-weight: 700;
-    color: #2a2724;
+    color: #F5F7FA;
     letter-spacing: 1px;
 }
 QLabel#HeaderSubtitle {
-    color: #8a857d;
+    color: #8B95A7;
     font-size: 12px;
 }
 QLineEdit {
-    background-color: #ffffff;
-    border: 1px solid #ddd7d0;
+    background-color: #202735;
+    border: 1px solid #2C3445;
     border-radius: 6px;
     padding: 9px 12px;
-    color: #2a2724;
+    color: #F5F7FA;
     font-size: 13px;
 }
 QLineEdit:focus {
-    border: 1px solid #c4716b;
+    border: 1px solid #2DD4BF;
 }
 QPushButton {
-    background-color: #c4716b;
-    color: #fffaf9;
+    background-color: #2DD4BF;
+    color: #151A23;
     border: none;
     border-radius: 6px;
     padding: 9px 18px;
     font-weight: 600;
 }
 QPushButton:hover {
-    background-color: #d18d87;
+    background-color: #5EEAD4;
 }
 QPushButton:pressed {
-    background-color: #a85c56;
+    background-color: #14B8A6;
 }
 QPushButton:disabled {
-    background-color: #e6e1da;
-    color: #a8a39a;
+    background-color: #202735;
+    color: #5b6577;
 }
 QPushButton#SecondaryButton {
-    background-color: #ffffff;
-    color: #5c5750;
-    border: 1px solid #ddd7d0;
+    background-color: #202735;
+    color: #F5F7FA;
+    border: 1px solid #2C3445;
 }
 QPushButton#SecondaryButton:hover {
-    background-color: #f0ece6;
-    border: 1px solid #ccc4ba;
+    background-color: #2A3344;
+    border: 1px solid #84CC16;
 }
 QPushButton#SecondaryButton:disabled {
-    background-color: #f0ece6;
-    color: #b3ada3;
-    border: 1px solid #e6e1da;
+    background-color: #1a202c;
+    color: #5b6577;
+    border: 1px solid #202735;
 }
 QGroupBox {
-    border: 1px solid #ddd7d0;
+    border: 1px solid #2C3445;
     border-radius: 8px;
     margin-top: 8px;
     padding-top: 14px;
     font-weight: 600;
-    color: #5c5750;
-    background-color: #fbf9f7;
+    color: #8B95A7;
+    background-color: #202735;
 }
 QGroupBox::title {
     subcontrol-origin: margin;
     left: 12px;
     padding: 0 4px;
-    color: #8a857d;
+    color: #8B95A7;
 }
 QGroupBox#intrusiveGroup {
-    border: 1px solid #d4956f;
+    border: 1px solid #F43F5E;
 }
 QGroupBox#intrusiveGroup::title {
-    color: #b9714a;
+    color: #F43F5E;
 }
 QCheckBox {
-    color: #3a3733;
+    color: #F5F7FA;
     spacing: 8px;
     padding: 2px;
 }
@@ -104,48 +104,48 @@ QCheckBox::indicator {
     width: 15px;
     height: 15px;
     border-radius: 4px;
-    border: 1px solid #ccc4ba;
-    background-color: #ffffff;
+    border: 1px solid #2C3445;
+    background-color: #202735;
 }
 QCheckBox::indicator:checked {
-    background-color: #c4716b;
-    border: 1px solid #c4716b;
+    background-color: #2DD4BF;
+    border: 1px solid #2DD4BF;
 }
 QTableWidget {
-    background-color: #ffffff;
-    alternate-background-color: #f7f4f1;
-    border: 1px solid #ddd7d0;
+    background-color: #1a202c;
+    alternate-background-color: #202735;
+    border: 1px solid #2C3445;
     border-radius: 8px;
-    gridline-color: #ece7e1;
-    selection-background-color: #f3ddd9;
+    gridline-color: #2C3445;
+    selection-background-color: #14463f;
 }
 QTableWidget::item {
     padding: 6px;
 }
 QHeaderView::section {
-    background-color: #f0ece6;
-    color: #6f6a62;
+    background-color: #202735;
+    color: #8B95A7;
     padding: 8px;
     border: none;
-    border-bottom: 1px solid #ddd7d0;
+    border-bottom: 1px solid #2DD4BF;
     font-weight: 600;
 }
 QStatusBar {
-    background-color: #f0ece6;
-    color: #8a857d;
-    border-top: 1px solid #ddd7d0;
+    background-color: #202735;
+    color: #8B95A7;
+    border-top: 1px solid #2C3445;
 }
 QScrollBar:vertical {
-    background: #f7f4f1;
+    background: #1a202c;
     width: 10px;
 }
 QScrollBar::handle:vertical {
-    background: #ddd7d0;
+    background: #2C3445;
     border-radius: 5px;
     min-height: 24px;
 }
 QScrollBar::handle:vertical:hover {
-    background: #ccc4ba;
+    background: #3a445a;
 }
 """
 
@@ -179,7 +179,7 @@ class MainWindow(QMainWindow):
 
         divider = QFrame()
         divider.setFrameShape(QFrame.HLine)
-        divider.setStyleSheet("background-color: #ddd7d0; max-height: 1px; border: none;")
+        divider.setStyleSheet("background-color: #2C3445; max-height: 1px; border: none;")
         layout.addWidget(divider)
 
         url_row = QHBoxLayout()
@@ -298,7 +298,7 @@ class MainWindow(QMainWindow):
         self.table.setRowCount(len(findings))
         for row, finding in enumerate(findings):
             severity = finding.get("severity", "informational")
-            color = QColor(SEVERITY_COLORS.get(severity, "#9ca3af"))
+            color = QColor(SEVERITY_COLORS.get(severity, "#8B95A7"))
             for col, value in enumerate([
                 severity.upper(),
                 finding.get("cve", "") or "—",
