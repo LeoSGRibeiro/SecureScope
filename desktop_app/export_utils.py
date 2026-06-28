@@ -6,6 +6,7 @@ from reportlab.lib.units import cm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
 from security_utils import SEVERITY_COLORS, SEVERITY_ORDER
+from version import APP_VERSION, APP_AUTHOR
 
 CSV_FIELDS = [
     "severity", "cve", "title", "description", "recommendation",
@@ -67,4 +68,6 @@ def export_pdf(result: dict, url: str, path: str) -> None:
     table.setStyle(TableStyle(style_commands))
 
     story.append(table)
+    story.append(Spacer(1, 0.4 * cm))
+    story.append(Paragraph(f"ThreatLens v{APP_VERSION} — desenvolvido por {APP_AUTHOR}", styles["Normal"]))
     doc.build(story)

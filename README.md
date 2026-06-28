@@ -1,5 +1,7 @@
 # ThreatLens — Enxergando ameaças antes que elas virem incidentes
 
+**Versão:** ver [`VERSION`](VERSION) (histórico em [`CHANGELOG.md`](CHANGELOG.md)) · **Desenvolvido por:** Leonardo Ribeiro
+
 > **AUTHORIZED USE ONLY.** This tool is exclusively for security testing of systems you own
 > or have **explicit written authorization** to test. Unauthorized use is illegal and may
 > violate applicable laws (CFAA, GDPR, LGPD, etc.).

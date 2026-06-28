@@ -10,6 +10,7 @@ from scan_worker import ScanWorker
 from security_utils import is_blocked_target, SEVERITY_COLORS, SEVERITY_ORDER
 from export_utils import export_csv, export_pdf
 from translations import translate_finding
+from version import APP_VERSION, APP_AUTHOR
 
 MODULES = ["headers", "tls", "cookies", "cors", "fingerprint", "subdomains", "owasp", "port_scan"]
 
@@ -152,7 +153,7 @@ QScrollBar::handle:vertical:hover {
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("ThreatLens Desktop")
+        self.setWindowTitle(f"ThreatLens Desktop v{APP_VERSION}")
         self.resize(1080, 700)
         self.setStyleSheet(STYLESHEET)
         self.worker: ScanWorker | None = None
@@ -239,7 +240,7 @@ class MainWindow(QMainWindow):
 
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("Pronto.")
+        self.status_bar.showMessage(f"Pronto. — ThreatLens v{APP_VERSION} — desenvolvido por {APP_AUTHOR}")
 
     def start_scan(self):
         url = self.url_input.text().strip()

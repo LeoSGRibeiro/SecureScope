@@ -17,7 +17,8 @@ app = FastAPI(
     title="ThreatLens API",
     description=(
         "**AUTHORIZED USE ONLY** — This platform is for defensive security analysis of targets "
-        "you own or have explicit written permission to test. Unauthorized testing is illegal."
+        "you own or have explicit written permission to test. Unauthorized testing is illegal.\n\n"
+        f"Developed by {settings.APP_AUTHOR}."
     ),
     version=settings.APP_VERSION,
     docs_url="/api/docs",

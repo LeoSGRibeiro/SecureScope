@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth";
+import { APP_VERSION, APP_AUTHOR } from "@/lib/version";
 import { useState } from "react";
 
 const NAV_ITEMS = [
@@ -99,6 +100,14 @@ export function Sidebar() {
           {!collapsed && <span>Logout</span>}
         </button>
       </div>
+
+      {/* Version / author */}
+      {!collapsed && (
+        <div className="px-4 py-2 border-t border-border/50 text-[10px] text-muted-foreground/70 leading-tight">
+          <div>ThreatLens v{APP_VERSION}</div>
+          <div>por {APP_AUTHOR}</div>
+        </div>
+      )}
 
       {/* Collapse toggle */}
       <button

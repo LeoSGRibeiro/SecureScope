@@ -1,6 +1,16 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
 from typing import List
 import secrets
+
+_VERSION_FILE = Path(__file__).resolve().parents[2] / "VERSION"
+
+
+def _read_version() -> str:
+    try:
+        return _VERSION_FILE.read_text().strip()
+    except OSError:
+        return "0.0.0"
 
 
 class Settings(BaseSettings):
@@ -8,7 +18,8 @@ class Settings(BaseSettings):
 
     # App
     APP_NAME: str = "ThreatLens"
-    APP_VERSION: str = "1.0.0"
+    APP_VERSION: str = _read_version()
+    APP_AUTHOR: str = "Leonardo Ribeiro"
     DEBUG: bool = False
     ENVIRONMENT: str = "production"
 

@@ -9,6 +9,7 @@ import { z } from "zod";
 import toast from "react-hot-toast";
 import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
+import { APP_VERSION, APP_AUTHOR } from "@/lib/version";
 
 const schema = z.object({
   username: z.string().min(1, "Username required"),
@@ -154,6 +155,9 @@ export default function LoginPage() {
           <p className="mt-4 text-center text-xs text-muted-foreground">
             No account?{" "}
             <a href="/register" className="text-primary hover:underline">Register</a>
+          </p>
+          <p className="mt-3 text-center text-[10px] text-muted-foreground/60">
+            ThreatLens v{APP_VERSION} — desenvolvido por {APP_AUTHOR}
           </p>
         </div>
       </motion.div>
