@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -9,12 +10,13 @@ from security_utils import SEVERITY_COLORS, SEVERITY_ORDER
 from version import APP_VERSION, APP_AUTHOR
 
 CSV_FIELDS = [
-    "severity", "cve", "title", "description", "recommendation",
+    "scan_datetime", "severity", "cve", "title", "description", "recommendation",
     "category", "module", "affected_url", "cvss_score", "owasp_category",
 ]
 
 
-def export_csv(result: dict, path: str) -> None:
+def export_csv(result: dict, path: str, scan_time: datetime | None = None) -> None:
+    scan_time_str = (scan_time or datetime.now()).strftime("%d/%m/%Y %H:%M:%S")
     findings = sorted(
         result.get("findings", []),
         key=lambda f: SEVERITY_ORDER.index(f["severity"]) if f["severity"] in SEVERITY_ORDER else len(SEVERITY_ORDER),
@@ -23,10 +25,11 @@ def export_csv(result: dict, path: str) -> None:
         writer = csv.DictWriter(f, fieldnames=CSV_FIELDS, extrasaction="ignore")
         writer.writeheader()
         for finding in findings:
-            writer.writerow(finding)
+            writer.writerow({**finding, "scan_datetime": scan_time_str})
 
 
-def export_pdf(result: dict, url: str, path: str) -> None:
+def export_pdf(result: dict, url: str, path: str, scan_time: datetime | None = None) -> None:
+    scan_time_str = (scan_time or datetime.now()).strftime("%d/%m/%Y %H:%M:%S")
     findings = sorted(
         result.get("findings", []),
         key=lambda f: SEVERITY_ORDER.index(f["severity"]) if f["severity"] in SEVERITY_ORDER else len(SEVERITY_ORDER),
@@ -38,6 +41,7 @@ def export_pdf(result: dict, url: str, path: str) -> None:
     story = [
         Paragraph("ThreatLens — Relatório de Scan", styles["Title"]),
         Paragraph(f"Alvo: {url}", styles["Normal"]),
+        Paragraph(f"Data/Hora do Scan: {scan_time_str}", styles["Normal"]),
         Paragraph(f"Risk score: {result.get('risk_score')} | Duração: {result.get('duration_ms')} ms | "
                   f"Achados: {len(findings)}", styles["Normal"]),
         Spacer(1, 0.5 * cm),
@@ -45,15 +49,21 @@ def export_pdf(result: dict, url: str, path: str) -> None:
 
     table_data = [["Severidade", "CVE", "Título", "Descrição", "Recomendação"]]
     for finding in findings:
+        severity = finding.get("severity", "informational")
+        severity_style = ParagraphStyle(
+            "severity_cell", parent=cell_style, fontSize=8, leading=10,
+            fontName="Helvetica-Bold",
+            textColor=colors.HexColor(SEVERITY_COLORS.get(severity, "#9ca3af")),
+        )
         table_data.append([
-            finding.get("severity", "").upper(),
-            finding.get("cve", "") or "—",
+            Paragraph(severity.upper(), severity_style),
+            Paragraph(finding.get("cve", "") or "—", cell_style),
             Paragraph(finding.get("title", ""), cell_style),
             Paragraph(finding.get("description", ""), cell_style),
             Paragraph(finding.get("recommendation", "") or "—", cell_style),
         ])
 
-    table = Table(table_data, colWidths=[2 * cm, 2.2 * cm, 3.8 * cm, 5.7 * cm, 5 * cm], repeatRows=1)
+    table = Table(table_data, colWidths=[2.4 * cm, 2.1 * cm, 3.6 * cm, 5.6 * cm, 5 * cm], repeatRows=1)
     style_commands = [
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2937")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -62,9 +72,6 @@ def export_pdf(result: dict, url: str, path: str) -> None:
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("FONTSIZE", (0, 1), (-1, -1), 8),
     ]
-    for row, finding in enumerate(findings, start=1):
-        color = colors.HexColor(SEVERITY_COLORS.get(finding.get("severity", "informational"), "#9ca3af"))
-        style_commands.append(("TEXTCOLOR", (0, row), (0, row), color))
     table.setStyle(TableStyle(style_commands))
 
     story.append(table)

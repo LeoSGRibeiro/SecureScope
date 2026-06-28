@@ -3,6 +3,15 @@
 Todas as mudanças notáveis deste projeto são registradas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/) e [SemVer](https://semver.org/).
 
+## [1.4.1] — 2026-06-28
+
+### Corrigido
+- Relatório (PDF/CSV) do app desktop agora exibe a data/hora em que o scan foi efetuado.
+- Coluna "Severidade" do PDF estava sem quebra de texto e estourava visualmente para a coluna seguinte (ex: "INFORMATIONAL") — agora usa `Paragraph` com largura ajustada, igual às demais colunas.
+
+### Desenvolvido por
+Leonardo Ribeiro
+
 ## [1.4.0] — 2026-06-28
 
 ### Adicionado

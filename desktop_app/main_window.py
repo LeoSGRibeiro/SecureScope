@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont
 
+from datetime import datetime
 from scan_worker import ScanWorker
 from security_utils import is_blocked_target, SEVERITY_COLORS, SEVERITY_ORDER
 from export_utils import export_csv, export_pdf
@@ -298,6 +299,7 @@ class MainWindow(QMainWindow):
         self.worker: ScanWorker | None = None
         self.last_result: dict | None = None
         self.last_url: str = ""
+        self.last_scan_time: datetime | None = None
         self.translated: bool = False
 
         central = QWidget()
@@ -439,6 +441,7 @@ class MainWindow(QMainWindow):
         self.scan_button.setEnabled(True)
         self.url_input.setEnabled(True)
         self.last_result = result
+        self.last_scan_time = datetime.now()
         if result.get("findings"):
             self.export_csv_button.setEnabled(True)
             self.export_pdf_button.setEnabled(True)
@@ -504,7 +507,7 @@ class MainWindow(QMainWindow):
         if not path:
             return
         try:
-            export_csv(self._result_for_export(), path)
+            export_csv(self._result_for_export(), path, self.last_scan_time)
             self.status_bar.showMessage(f"CSV exportado: {path}")
         except Exception as e:
             QMessageBox.critical(self, "Erro ao exportar CSV", str(e))
@@ -516,7 +519,7 @@ class MainWindow(QMainWindow):
         if not path:
             return
         try:
-            export_pdf(self._result_for_export(), self.last_url, path)
+            export_pdf(self._result_for_export(), self.last_url, path, self.last_scan_time)
             self.status_bar.showMessage(f"PDF exportado: {path}")
         except Exception as e:
             QMessageBox.critical(self, "Erro ao exportar PDF", str(e))
