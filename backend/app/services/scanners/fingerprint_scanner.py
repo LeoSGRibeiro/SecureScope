@@ -7,6 +7,7 @@ import time
 import httpx
 from bs4 import BeautifulSoup
 from app.services.scanners.base import Finding, ScanResult, Severity
+from app.services.scanners.cve_lookup import search_cves
 
 TECH_SIGNATURES = {
     "WordPress": {
@@ -114,6 +115,17 @@ OUTDATED_CVE = {
     "jQuery < 1.12": "CVE-2015-9251",
 }
 
+# Best-effort live lookup against the official CVE List (cve.org, via NVD) for
+# each outdated library detected above. The keyword is the bare product name —
+# NVD's keyword search matches substrings of CVE descriptions, so this can
+# surface CVEs for similarly-named plugins, not just the core library. Every
+# resulting Finding is worded as "possible, verify applicability" rather than
+# a confirmed match for exactly that reason.
+CVE_LOOKUP_KEYWORDS = {
+    "jQuery < 1.12": "jquery",
+    "Bootstrap 3.x": "bootstrap",
+}
+
 ADMIN_PATHS = [
     "/admin", "/wp-admin", "/administrator", "/manager",
     "/cpanel", "/.env", "/config.php", "/phpinfo.php",
@@ -190,6 +202,29 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                         owasp_category="A06:2021 – Vulnerable and Outdated Components",
                         cve=OUTDATED_CVE.get(lib_name, ""),
                     ))
+
+                    keyword = CVE_LOOKUP_KEYWORDS.get(lib_name)
+                    if keyword:
+                        cve_matches = await search_cves(keyword, max_results=2, timeout=25.0)
+                        for cve in cve_matches:
+                            findings.append(Finding(
+                                title=f"Possible Related CVE for {lib_name.split(' ')[0]} (Verify Applicability): {cve['id']}",
+                                description=(
+                                    f"While searching the public CVE List for '{keyword}', {cve['id']} was found: "
+                                    f"{cve['description']} This is a keyword match and may refer to a different "
+                                    "library or plugin with a similar name — manually confirm it applies to the "
+                                    "detected version before treating it as confirmed."
+                                ),
+                                severity=cve["severity"],
+                                category="Fingerprint",
+                                module="fingerprint",
+                                affected_url=url,
+                                evidence={"cve": cve["id"], "cvss_score": cve["cvss_score"], "query": keyword},
+                                recommendation=f"Review {cve['id']} at the official CVE record and confirm applicability before remediating.",
+                                owasp_category="A06:2021 – Vulnerable and Outdated Components",
+                                cve=cve["id"],
+                                references=[cve["url"]],
+                            ))
 
             # Check exposed generator/version meta tags
             soup = BeautifulSoup(body, "lxml")

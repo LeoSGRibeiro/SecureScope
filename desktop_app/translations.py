@@ -134,6 +134,16 @@ _RULES: list[tuple[re.Pattern, str]] = [
     (re.compile(r"^Sensitive Path Accessible: (.+) \(HTTP (\d+)\)$"), r"Caminho Sensível Acessível: \1 (HTTP \2)"),
     (re.compile(r"^Path (.+) returned HTTP (\d+)\.$"), r"O caminho \1 retornou HTTP \2."),
     (re.compile(r"^Restrict access to (.+) or remove it from production\.$"), r"Restrinja o acesso a \1 ou remova-o do ambiente de produção."),
+    (re.compile(r"^Possible Related CVE for (.+) \(Verify Applicability\): (.+)$"), r"Possível CVE Relacionado a \1 (Verificar Aplicabilidade): \2"),
+    (re.compile(
+        r"^While searching the public CVE List for '(.+)', (CVE-[\d-]+) was found: (.+) "
+        r"This is a keyword match and may refer to a different library or plugin with a similar name — "
+        r"manually confirm it applies to the detected version before treating it as confirmed\.$"
+    ), r"Ao buscar na lista pública de CVEs por '\1', foi encontrado o \2: \3 "
+       r"Esta é uma correspondência por palavra-chave e pode se referir a uma biblioteca ou plugin diferente "
+       r"com nome semelhante — confirme manualmente se ela se aplica à versão detectada antes de tratá-la como confirmada."),
+    (re.compile(r"^Review (CVE-[\d-]+) at the official CVE record and confirm applicability before remediating\.$"),
+     r"Revise o \1 no registro oficial do CVE e confirme a aplicabilidade antes de corrigir."),
 
     # --- subdomains_scanner ---
     (re.compile(r"^(\d+) Live Subdomains Discovered$"), r"\1 Subdomínios Ativos Descobertos"),

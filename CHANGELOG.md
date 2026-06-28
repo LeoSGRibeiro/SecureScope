@@ -3,6 +3,16 @@
 Todas as mudanças notáveis deste projeto são registradas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/) e [SemVer](https://semver.org/).
 
+## [1.3.0] — 2026-06-28
+
+### Adicionado
+- Consulta em tempo real à lista oficial de CVEs ([cve.org](https://www.cve.org/)), via a API pública do NVD (que enriquece os mesmos dados do CVE List), para bibliotecas desatualizadas detectadas pelo `fingerprint_scanner`. Cada CVE encontrado popula o campo `cve` do achado e linka de volta para o registro oficial em `cve.org/CVERecord`.
+- Novo módulo `backend/app/services/scanners/cve_lookup.py`, reaproveitável por outros scanners.
+- Achados de CVE por palavra-chave usam linguagem explícita de "verificar aplicabilidade", já que a busca por nome de produto pode retornar CVEs de plugins/bibliotecas com nome semelhante, não necessariamente da versão exata detectada.
+
+### Desenvolvido por
+Leonardo Ribeiro
+
 ## [1.2.0] — 2026-06-27
 
 ### Adicionado
