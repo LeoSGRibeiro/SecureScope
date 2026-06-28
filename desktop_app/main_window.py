@@ -14,7 +14,10 @@ from version import APP_VERSION, APP_AUTHOR
 
 MODULES = ["headers", "tls", "cookies", "cors", "fingerprint", "subdomains", "owasp", "port_scan"]
 
-STYLESHEET = """
+DARK_DIVIDER = "#2C3445"
+LIGHT_DIVIDER = "#E2E8F0"
+
+DARK_STYLESHEET = """
 QMainWindow, QWidget {
     background-color: #151A23;
     color: #F5F7FA;
@@ -149,13 +152,149 @@ QScrollBar::handle:vertical:hover {
 }
 """
 
+LIGHT_STYLESHEET = """
+QMainWindow, QWidget {
+    background-color: #F5F7FA;
+    color: #151A23;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 13px;
+}
+QLabel#HeaderTitle {
+    font-size: 21px;
+    font-weight: 700;
+    color: #151A23;
+    letter-spacing: 1px;
+}
+QLabel#HeaderSubtitle {
+    color: #64748B;
+    font-size: 12px;
+}
+QLineEdit {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    padding: 9px 12px;
+    color: #151A23;
+    font-size: 13px;
+}
+QLineEdit:focus {
+    border: 1px solid #0D9488;
+}
+QPushButton {
+    background-color: #0D9488;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 18px;
+    font-weight: 600;
+}
+QPushButton:hover {
+    background-color: #14B8A6;
+}
+QPushButton:pressed {
+    background-color: #0F766E;
+}
+QPushButton:disabled {
+    background-color: #E2E8F0;
+    color: #94A3B8;
+}
+QPushButton#SecondaryButton {
+    background-color: #FFFFFF;
+    color: #151A23;
+    border: 1px solid #E2E8F0;
+}
+QPushButton#SecondaryButton:hover {
+    background-color: #F1F4F8;
+    border: 1px solid #65A30D;
+}
+QPushButton#SecondaryButton:disabled {
+    background-color: #F1F4F8;
+    color: #94A3B8;
+    border: 1px solid #E2E8F0;
+}
+QGroupBox {
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    margin-top: 8px;
+    padding-top: 14px;
+    font-weight: 600;
+    color: #64748B;
+    background-color: #FFFFFF;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 12px;
+    padding: 0 4px;
+    color: #64748B;
+}
+QGroupBox#intrusiveGroup {
+    border: 1px solid #F43F5E;
+}
+QGroupBox#intrusiveGroup::title {
+    color: #F43F5E;
+}
+QCheckBox {
+    color: #151A23;
+    spacing: 8px;
+    padding: 2px;
+}
+QCheckBox::indicator {
+    width: 15px;
+    height: 15px;
+    border-radius: 4px;
+    border: 1px solid #E2E8F0;
+    background-color: #FFFFFF;
+}
+QCheckBox::indicator:checked {
+    background-color: #0D9488;
+    border: 1px solid #0D9488;
+}
+QTableWidget {
+    background-color: #FFFFFF;
+    alternate-background-color: #F5F7FA;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    gridline-color: #E2E8F0;
+    selection-background-color: #CCFBF1;
+}
+QTableWidget::item {
+    padding: 6px;
+}
+QHeaderView::section {
+    background-color: #F1F4F8;
+    color: #64748B;
+    padding: 8px;
+    border: none;
+    border-bottom: 1px solid #0D9488;
+    font-weight: 600;
+}
+QStatusBar {
+    background-color: #F1F4F8;
+    color: #64748B;
+    border-top: 1px solid #E2E8F0;
+}
+QScrollBar:vertical {
+    background: #FFFFFF;
+    width: 10px;
+}
+QScrollBar::handle:vertical {
+    background: #E2E8F0;
+    border-radius: 5px;
+    min-height: 24px;
+}
+QScrollBar::handle:vertical:hover {
+    background: #CBD5E1;
+}
+"""
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(f"ThreatLens Desktop v{APP_VERSION}")
         self.resize(1080, 700)
-        self.setStyleSheet(STYLESHEET)
+        self.dark_mode = True
+        self.setStyleSheet(DARK_STYLESHEET)
         self.worker: ScanWorker | None = None
         self.last_result: dict | None = None
         self.last_url: str = ""
@@ -167,6 +306,7 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(20, 18, 20, 14)
         layout.setSpacing(12)
 
+        header_row = QHBoxLayout()
         header = QVBoxLayout()
         header.setSpacing(2)
         title = QLabel("ThreatLens")
@@ -175,12 +315,20 @@ class MainWindow(QMainWindow):
         subtitle.setObjectName("HeaderSubtitle")
         header.addWidget(title)
         header.addWidget(subtitle)
-        layout.addLayout(header)
+        header_row.addLayout(header)
+        header_row.addStretch()
+        self.theme_button = QPushButton("☀")
+        self.theme_button.setObjectName("SecondaryButton")
+        self.theme_button.setFixedSize(38, 38)
+        self.theme_button.setToolTip("Alternar tema claro/escuro")
+        self.theme_button.clicked.connect(self.toggle_theme)
+        header_row.addWidget(self.theme_button)
+        layout.addLayout(header_row)
 
-        divider = QFrame()
-        divider.setFrameShape(QFrame.HLine)
-        divider.setStyleSheet("background-color: #2C3445; max-height: 1px; border: none;")
-        layout.addWidget(divider)
+        self.divider = QFrame()
+        self.divider.setFrameShape(QFrame.HLine)
+        self.divider.setStyleSheet(f"background-color: {DARK_DIVIDER}; max-height: 1px; border: none;")
+        layout.addWidget(self.divider)
 
         url_row = QHBoxLayout()
         url_row.setSpacing(10)
@@ -241,6 +389,17 @@ class MainWindow(QMainWindow):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage(f"Pronto. — ThreatLens v{APP_VERSION} — desenvolvido por {APP_AUTHOR}")
+
+    def toggle_theme(self):
+        self.dark_mode = not self.dark_mode
+        if self.dark_mode:
+            self.setStyleSheet(DARK_STYLESHEET)
+            self.divider.setStyleSheet(f"background-color: {DARK_DIVIDER}; max-height: 1px; border: none;")
+            self.theme_button.setText("☀")
+        else:
+            self.setStyleSheet(LIGHT_STYLESHEET)
+            self.divider.setStyleSheet(f"background-color: {LIGHT_DIVIDER}; max-height: 1px; border: none;")
+            self.theme_button.setText("🌙")
 
     def start_scan(self):
         url = self.url_input.text().strip()

@@ -3,6 +3,16 @@
 Todas as mudanças notáveis deste projeto são registradas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/) e [SemVer](https://semver.org/).
 
+## [1.2.0] — 2026-06-27
+
+### Adicionado
+- Alternância de tema claro/escuro com ícone (sol/lua), no app desktop e no frontend.
+- Frontend: tema claro completo (CSS vars espelhadas do tema escuro), conectado via `next-themes` (já estava instalado, mas nunca tinha sido configurado — `ThemeProvider` adicionado em `providers.tsx`, preferência persistida em `localStorage`).
+- App desktop: `DARK_STYLESHEET`/`LIGHT_STYLESHEET` alternáveis via botão no cabeçalho.
+
+### Desenvolvido por
+Leonardo Ribeiro
+
 ## [1.1.0] — 2026-06-27
 
 ### Adicionado

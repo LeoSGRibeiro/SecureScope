@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { APP_VERSION, APP_AUTHOR } from "@/lib/version";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const schema = z.object({
   username: z.string().min(1, "Username required"),
@@ -50,6 +51,10 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       {/* Background grid */}
       <div className="fixed inset-0 bg-grid-pattern bg-[size:40px_40px] opacity-100 pointer-events-none" />
+
+      <div className="fixed top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}

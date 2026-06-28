@@ -6,6 +6,34 @@
 
 @layer base {
   :root {
+    /* Tema claro — espelha as cores do tema escuro (Linear/Notion/Tailscale) */
+    --background: 214 29% 97%;
+    --foreground: 215 25% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 11%;
+    --primary: 172 66% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 213 27% 95%;
+    --secondary-foreground: 215 25% 11%;
+    --muted: 213 27% 95%;
+    --muted-foreground: 215 14% 46%;
+    --accent: 84 70% 38%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 350 80% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 172 66% 40%;
+    --success: 142 65% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 90% 45%;
+    --warning-foreground: 0 0% 100%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
     /* Identidade Linear/Notion/Tailscale: bg #151A23, cards #202735,
        primária turquesa #2DD4BF, accent lima #84CC16, texto #F5F7FA,
        crítico #F43F5E, médio #FACC15, baixo #22C55E */
@@ -32,7 +60,6 @@
     --success-foreground: 215 25% 11%;
     --warning: 48 96% 53%;
     --warning-foreground: 215 25% 11%;
-    --radius: 0.5rem;
   }
 }
 
