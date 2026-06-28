@@ -3,6 +3,18 @@
 Todas as mudanças notáveis deste projeto são registradas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/) e [SemVer](https://semver.org/).
 
+## [1.4.0] — 2026-06-28
+
+### Adicionado
+- Mais de 15 novas assinaturas de detecção no `fingerprint_scanner`: Tailwind CSS, Google Tag Manager, Google Analytics, Google reCAPTCHA, Hotjar, Webflow, Wix, Squarespace, Shopify, WooCommerce, Magento, PHP, ASP.NET, Svelte, Alpine.js, jQuery UI, Font Awesome, Vercel, Netlify.
+- A busca de CVE agora roda para **qualquer tecnologia elegível detectada** (não só jQuery/Bootstrap desatualizados), limitada a 3 consultas por scan para respeitar o limite de requisições do NVD. Tecnologias de infraestrutura/CDN (Nginx, Apache, IIS, Cloudflare, CloudFront, Vercel, Netlify) ficam de fora da busca de CVE por gerarem ruído, não sinal.
+
+### Validado
+- Testado contra um site real (https://aplicap.com.br) com WordPress + PHP detectados: retornou `CVE-1999-0238` (crítico) para PHP, com o campo `cve` populado corretamente.
+
+### Desenvolvido por
+Leonardo Ribeiro
+
 ## [1.3.0] — 2026-06-28
 
 ### Adicionado

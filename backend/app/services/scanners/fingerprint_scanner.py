@@ -60,14 +60,99 @@ TECH_SIGNATURES = {
         "header_keys": [],
         "severity": Severity.informational,
     },
+    "Svelte": {
+        "patterns": [r"svelte-[a-z0-9]{6,}", r"__svelte"],
+        "header_keys": [],
+        "severity": Severity.informational,
+    },
+    "Alpine.js": {
+        "patterns": [r"x-data=", r"alpinejs", r"alpine\.min\.js"],
+        "header_keys": [],
+        "severity": Severity.informational,
+    },
     "jQuery": {
         "patterns": [r"jquery[.-](\d+\.\d+)", r"jQuery v(\d+)"],
+        "header_keys": [],
+        "severity": Severity.informational,
+    },
+    "jQuery UI": {
+        "patterns": [r"jquery-ui[.-]", r"jquery\.ui\."],
         "header_keys": [],
         "severity": Severity.informational,
     },
     "Bootstrap": {
         "patterns": [r"bootstrap\.min\.css", r"bootstrap\.js"],
         "header_keys": [],
+        "severity": Severity.informational,
+    },
+    "Tailwind CSS": {
+        "patterns": [r"tailwind(?:css)?\.min\.css", r"class=\"[^\"]*\b(?:flex|grid|px-\d|py-\d|bg-\w+-\d{3})\b"],
+        "header_keys": [],
+        "severity": Severity.informational,
+    },
+    "Font Awesome": {
+        "patterns": [r"font-awesome", r"fontawesome"],
+        "header_keys": [],
+        "severity": Severity.informational,
+    },
+    "Google Tag Manager": {
+        "patterns": [r"googletagmanager\.com/gtm\.js", r"GTM-[A-Z0-9]+"],
+        "header_keys": [],
+        "severity": Severity.informational,
+    },
+    "Google Analytics": {
+        "patterns": [r"google-analytics\.com/analytics\.js", r"gtag\(['\"]config['\"]", r"UA-\d+-\d+"],
+        "header_keys": [],
+        "severity": Severity.informational,
+    },
+    "Google reCAPTCHA": {
+        "patterns": [r"google\.com/recaptcha", r"g-recaptcha"],
+        "header_keys": [],
+        "severity": Severity.informational,
+    },
+    "Hotjar": {
+        "patterns": [r"static\.hotjar\.com"],
+        "header_keys": [],
+        "severity": Severity.informational,
+    },
+    "Webflow": {
+        "patterns": [r"webflow\.js", r"data-wf-site"],
+        "header_keys": [],
+        "severity": Severity.informational,
+    },
+    "Wix": {
+        "patterns": [r"wix\.com", r"wixstatic\.com"],
+        "header_keys": ["x-wix-request-id"],
+        "severity": Severity.informational,
+    },
+    "Squarespace": {
+        "patterns": [r"squarespace\.com", r"static1\.squarespace\.com"],
+        "header_keys": [],
+        "severity": Severity.informational,
+    },
+    "Shopify": {
+        "patterns": [r"cdn\.shopify\.com", r"Shopify\.theme"],
+        "header_keys": ["x-shopify-stage"],
+        "severity": Severity.informational,
+    },
+    "WooCommerce": {
+        "patterns": [r"woocommerce"],
+        "header_keys": [],
+        "severity": Severity.informational,
+    },
+    "Magento": {
+        "patterns": [r"/skin/frontend/", r"Magento", r"mage/cookies\.js"],
+        "header_keys": [],
+        "severity": Severity.informational,
+    },
+    "PHP": {
+        "patterns": [r"\.php(?:[?\"'#]|$)"],
+        "header_keys": ["x-powered-by"],
+        "severity": Severity.informational,
+    },
+    "ASP.NET": {
+        "patterns": [r"__VIEWSTATE", r"__EVENTVALIDATION"],
+        "header_keys": ["x-aspnet-version", "x-aspnetmvc-version"],
         "severity": Severity.informational,
     },
     "Cloudflare": {
@@ -78,6 +163,16 @@ TECH_SIGNATURES = {
     "AWS CloudFront": {
         "patterns": [],
         "header_keys": ["x-amz-cf-id", "x-amz-cf-pop"],
+        "severity": Severity.informational,
+    },
+    "Vercel": {
+        "patterns": [],
+        "header_keys": ["x-vercel-id", "x-vercel-cache"],
+        "severity": Severity.informational,
+    },
+    "Netlify": {
+        "patterns": [],
+        "header_keys": ["x-nf-request-id"],
         "severity": Severity.informational,
     },
     "Nginx": {
@@ -115,16 +210,28 @@ OUTDATED_CVE = {
     "jQuery < 1.12": "CVE-2015-9251",
 }
 
-# Best-effort live lookup against the official CVE List (cve.org, via NVD) for
-# each outdated library detected above. The keyword is the bare product name —
-# NVD's keyword search matches substrings of CVE descriptions, so this can
-# surface CVEs for similarly-named plugins, not just the core library. Every
-# resulting Finding is worded as "possible, verify applicability" rather than
-# a confirmed match for exactly that reason.
 CVE_LOOKUP_KEYWORDS = {
     "jQuery < 1.12": "jquery",
     "Bootstrap 3.x": "bootstrap",
 }
+
+# Technologies eligible for the *general* live CVE lookup (run once per
+# detected technology, not only for the known-outdated patterns above).
+# Restricted to self-hosted CMS/frameworks/libraries where a CVE search is
+# actually actionable — deliberately excludes generic infra/CDN signatures
+# (Nginx, Apache, IIS, Cloudflare, CloudFront, Vercel, Netlify) since a bare
+# keyword search against those produces mostly noise unrelated to this target.
+CVE_ELIGIBLE_TECH = {
+    "WordPress", "Drupal", "Joomla", "Laravel", "Django", "Ruby on Rails",
+    "Next.js", "React", "Vue.js", "Angular", "Svelte", "Alpine.js",
+    "jQuery", "jQuery UI", "Bootstrap", "WooCommerce", "Magento",
+    "PHP", "ASP.NET", "Webflow", "Wix", "Squarespace", "Shopify",
+}
+
+# Cap how many distinct technologies trigger a live NVD query per scan —
+# NVD allows ~5 unauthenticated requests per 30s, and each lookup already
+# takes several seconds, so an unbounded loop would make scans very slow.
+MAX_GENERAL_CVE_LOOKUPS = 3
 
 ADMIN_PATHS = [
     "/admin", "/wp-admin", "/administrator", "/manager",
@@ -134,10 +241,34 @@ ADMIN_PATHS = [
 ]
 
 
+def _cve_findings(tech_label: str, keyword: str, url: str, cve_matches: list[dict]) -> list[Finding]:
+    findings = []
+    for cve in cve_matches:
+        findings.append(Finding(
+            title=f"Possible Related CVE for {tech_label} (Verify Applicability): {cve['id']}",
+            description=(
+                f"While searching the public CVE List for '{keyword}', {cve['id']} was found: "
+                f"{cve['description']} This is a keyword match and may refer to a different "
+                "library or plugin with a similar name — manually confirm it applies to the "
+                "detected version before treating it as confirmed."
+            ),
+            severity=cve["severity"],
+            category="Fingerprint",
+            module="fingerprint",
+            affected_url=url,
+            evidence={"cve": cve["id"], "cvss_score": cve["cvss_score"], "query": keyword},
+            recommendation=f"Review {cve['id']} at the official CVE record and confirm applicability before remediating.",
+            owasp_category="A06:2021 – Vulnerable and Outdated Components",
+            cve=cve["id"],
+            references=[cve["url"]],
+        ))
+    return findings
+
+
 async def scan(url: str, timeout: int = 15) -> ScanResult:
     start = time.monotonic()
     findings: list[Finding] = []
-    raw: dict = {"detected": [], "exposed_paths": []}
+    raw: dict = {"detected": [], "exposed_paths": [], "cve_lookups": []}
     detected_tech: list[str] = []
 
     try:
@@ -186,7 +317,9 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                     recommendation="Review whether detected technology versions are up-to-date.",
                 ))
 
-            # Check for outdated libraries in HTML
+            covered_keywords: set[str] = set()
+
+            # Check for outdated libraries in HTML (known-version CVE matches)
             for lib_name, (pattern, condition) in OUTDATED_PATTERNS.items():
                 m = re.search(pattern, body, re.IGNORECASE)
                 if m and condition(m):
@@ -205,26 +338,27 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
 
                     keyword = CVE_LOOKUP_KEYWORDS.get(lib_name)
                     if keyword:
+                        covered_keywords.add(keyword)
+                        raw["cve_lookups"].append(keyword)
                         cve_matches = await search_cves(keyword, max_results=2, timeout=25.0)
-                        for cve in cve_matches:
-                            findings.append(Finding(
-                                title=f"Possible Related CVE for {lib_name.split(' ')[0]} (Verify Applicability): {cve['id']}",
-                                description=(
-                                    f"While searching the public CVE List for '{keyword}', {cve['id']} was found: "
-                                    f"{cve['description']} This is a keyword match and may refer to a different "
-                                    "library or plugin with a similar name — manually confirm it applies to the "
-                                    "detected version before treating it as confirmed."
-                                ),
-                                severity=cve["severity"],
-                                category="Fingerprint",
-                                module="fingerprint",
-                                affected_url=url,
-                                evidence={"cve": cve["id"], "cvss_score": cve["cvss_score"], "query": keyword},
-                                recommendation=f"Review {cve['id']} at the official CVE record and confirm applicability before remediating.",
-                                owasp_category="A06:2021 – Vulnerable and Outdated Components",
-                                cve=cve["id"],
-                                references=[cve["url"]],
-                            ))
+                        findings.extend(_cve_findings(lib_name.split(" ")[0], keyword, url, cve_matches))
+
+            # General CVE lookup for any other eligible detected technology
+            # (capped, sequential, skips ones already queried above)
+            general_lookups_done = 0
+            for tech in detected_tech:
+                if general_lookups_done >= MAX_GENERAL_CVE_LOOKUPS:
+                    break
+                if tech not in CVE_ELIGIBLE_TECH:
+                    continue
+                keyword = tech.lower()
+                if keyword in covered_keywords:
+                    continue
+                covered_keywords.add(keyword)
+                raw["cve_lookups"].append(keyword)
+                general_lookups_done += 1
+                cve_matches = await search_cves(keyword, max_results=1, timeout=25.0)
+                findings.extend(_cve_findings(tech, keyword, url, cve_matches))
 
             # Check exposed generator/version meta tags
             soup = BeautifulSoup(body, "lxml")
