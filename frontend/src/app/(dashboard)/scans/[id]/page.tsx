@@ -1,7 +1,8 @@
 "use client";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, RefreshCw, Shield, Clock } from "lucide-react";
+import { ArrowLeft, RefreshCw, Shield, Clock, FileText, FileSpreadsheet, Download } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { scansApi } from "@/lib/api";
@@ -11,11 +12,47 @@ import { cn, scanStatusColor, riskScoreColor, riskScoreLabel, formatDate, timeAg
 import type { Severity } from "@/types";
 import toast from "react-hot-toast";
 
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function getFilenameFromHeaders(headers: any, fallback: string): string {
+  const cd = headers?.["content-disposition"] || "";
+  const match = cd.match(/filename="?([^"]+)"?/);
+  return match?.[1] || fallback;
+}
+
 const SEVERITY_ORDER: Severity[] = ["critical", "high", "medium", "low", "informational"];
 
 export default function ScanDetailPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
+  const [exporting, setExporting] = useState<"pdf" | "gerencial" | "csv" | null>(null);
+
+  const handleExport = async (type: "pdf" | "gerencial" | "csv") => {
+    setExporting(type);
+    try {
+      let res: any;
+      if (type === "pdf") res = await scansApi.exportPdf(id);
+      else if (type === "gerencial") res = await scansApi.exportPdfGerencial(id);
+      else res = await scansApi.exportCsv(id);
+
+      const ext = type === "csv" ? "csv" : "pdf";
+      const fallback = `scan_${id.slice(0, 8)}_${type}.${ext}`;
+      const filename = getFilenameFromHeaders(res.headers, fallback);
+      downloadBlob(new Blob([res.data]), filename);
+      toast.success(`${type === "csv" ? "CSV" : "PDF"} exportado com sucesso`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Erro ao exportar");
+    } finally {
+      setExporting(null);
+    }
+  };
 
   const { data: scan, isLoading, refetch } = useQuery({
     queryKey: ["scan", id],
@@ -80,12 +117,45 @@ export default function ScanDetailPage() {
             {scan.completed_at && ` · Completed ${formatDate(scan.completed_at)}`}
           </p>
         </div>
-        <button
-          onClick={() => refetch()}
-          className="p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          {scan.status === "completed" && (
+            <>
+              <button
+                onClick={() => handleExport("csv")}
+                disabled={exporting !== null}
+                title="Exportar CSV"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 disabled:opacity-50 transition-colors"
+              >
+                {exporting === "csv" ? <div className="w-3 h-3 border border-muted-foreground/40 border-t-foreground rounded-full animate-spin" /> : <FileSpreadsheet className="w-3.5 h-3.5" />}
+                CSV
+              </button>
+              <button
+                onClick={() => handleExport("pdf")}
+                disabled={exporting !== null}
+                title="Exportar PDF Técnico"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 disabled:opacity-50 transition-colors"
+              >
+                {exporting === "pdf" ? <div className="w-3 h-3 border border-muted-foreground/40 border-t-foreground rounded-full animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                PDF Técnico
+              </button>
+              <button
+                onClick={() => handleExport("gerencial")}
+                disabled={exporting !== null}
+                title="Exportar Relatório Gerencial"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/40 bg-primary/5 text-xs font-medium text-primary hover:bg-primary/10 disabled:opacity-50 transition-colors"
+              >
+                {exporting === "gerencial" ? <div className="w-3 h-3 border border-primary/30 border-t-primary rounded-full animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                Rel. Gerencial
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => refetch()}
+            className="p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Running indicator */}

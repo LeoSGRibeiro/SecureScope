@@ -78,6 +78,9 @@ export const scansApi = {
   cancel: (id: string) => api.delete(`/scans/${id}`),
   markFalsePositive: (scanId: string, vulnId: string) =>
     api.patch(`/scans/${scanId}/vulnerabilities/${vulnId}/false-positive`),
+  exportPdf: (id: string) => api.get(`/scans/${id}/export/pdf`, { responseType: "blob" }),
+  exportPdfGerencial: (id: string) => api.get(`/scans/${id}/export/pdf-gerencial`, { responseType: "blob" }),
+  exportCsv: (id: string) => api.get(`/scans/${id}/export/csv`, { responseType: "blob" }),
 };
 
 export default api;

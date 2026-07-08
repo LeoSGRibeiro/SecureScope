@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from uuid import UUID
@@ -10,6 +11,7 @@ from app.schemas.scan import ScanCreate, ScanOut, ScanDetail, ScanStats, Vulnera
 from app.api.deps import get_current_user, log_audit
 from app.workers.tasks import execute_scan_task
 from app.core.intrusive import INTRUSIVE_MODULES
+from app.services.export_service import generate_pdf, generate_pdf_gerencial, generate_csv
 
 router = APIRouter(prefix="/scans", tags=["scans"])
 
@@ -175,6 +177,111 @@ async def cancel_scan(
         raise HTTPException(400, detail="Only pending/running scans can be cancelled")
     scan.status = ScanStatus.cancelled
     await db.commit()
+
+
+@router.get("/{scan_id}/export/pdf")
+async def export_pdf_report(
+    scan_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    scan, target = await _get_scan_with_target(scan_id, current_user.id, db)
+    result, scan_time = _build_result(scan)
+    pdf_bytes = generate_pdf(result, target.value, scan_time)
+    filename = f"{target.value.replace('https://','').replace('http://','').rstrip('/')}_{scan_time.strftime('%Y%m%d_%H%M')}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/{scan_id}/export/pdf-gerencial")
+async def export_pdf_gerencial_report(
+    scan_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    scan, target = await _get_scan_with_target(scan_id, current_user.id, db)
+    result, scan_time = _build_result(scan)
+    pdf_bytes = generate_pdf_gerencial(result, target.value, scan_time)
+    filename = f"{target.value.replace('https://','').replace('http://','').rstrip('/')}_{scan_time.strftime('%Y%m%d_%H%M')}_gerencial.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/{scan_id}/export/csv")
+async def export_csv_report(
+    scan_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    scan, target = await _get_scan_with_target(scan_id, current_user.id, db)
+    result, scan_time = _build_result(scan)
+    csv_bytes = generate_csv(result, scan_time)
+    filename = f"{target.value.replace('https://','').replace('http://','').rstrip('/')}_{scan_time.strftime('%Y%m%d_%H%M')}.csv"
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+async def _get_scan_with_target(scan_id: UUID, user_id, db: AsyncSession):
+    result = await db.execute(
+        select(Scan).where(Scan.id == scan_id, Scan.owner_id == user_id)
+    )
+    scan = result.scalar_one_or_none()
+    if not scan:
+        raise HTTPException(404, detail="Scan not found")
+    if scan.status != ScanStatus.completed:
+        raise HTTPException(400, detail="Export only available for completed scans")
+
+    target_result = await db.execute(select(Target).where(Target.id == scan.target_id))
+    target = target_result.scalar_one_or_none()
+    if not target:
+        raise HTTPException(404, detail="Target not found")
+
+    vuln_result = await db.execute(
+        select(Vulnerability).where(Vulnerability.scan_id == scan.id)
+    )
+    scan._vulns = vuln_result.scalars().all()
+    return scan, target
+
+
+def _build_result(scan) -> tuple[dict, object]:
+    from datetime import datetime, timezone
+    vulns = getattr(scan, "_vulns", [])
+    findings = [
+        {
+            "title": v.title,
+            "severity": v.severity.value if hasattr(v.severity, "value") else v.severity,
+            "cve": v.cve or "",
+            "description": v.description or "",
+            "recommendation": v.recommendation or "",
+            "category": v.category or "",
+            "module": v.module or "",
+            "affected_url": v.affected_url or "",
+            "cvss_score": v.cvss_score,
+            "owasp_category": v.owasp_category or "",
+        }
+        for v in vulns
+        if not v.is_false_positive
+    ]
+    modules_run = scan.modules or []
+    scan_time = scan.completed_at or scan.created_at
+    if scan_time and hasattr(scan_time, "tzinfo") and scan_time.tzinfo:
+        scan_time = scan_time.replace(tzinfo=None)
+    result = {
+        "findings": findings,
+        "risk_score": scan.risk_score or 0,
+        "duration_ms": scan.duration_ms or 0,
+        "modules_run": modules_run,
+    }
+    return result, scan_time or datetime.now()
 
 
 @router.patch("/{scan_id}/vulnerabilities/{vuln_id}/false-positive")
