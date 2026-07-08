@@ -10,6 +10,7 @@ class ScanCreate(BaseModel):
     target_id: UUID
     scan_type: ScanType = ScanType.full
     modules: list[str] | None = None
+    name: str | None = None
 
     @field_validator("modules")
     @classmethod
@@ -40,6 +41,10 @@ class VulnerabilityOut(BaseModel):
     created_at: datetime
 
 
+class ScanUpdate(BaseModel):
+    name: str | None = None
+
+
 class ScanOut(BaseModel):
     model_config = {"from_attributes": True}
     id: UUID
@@ -48,6 +53,7 @@ class ScanOut(BaseModel):
     status: ScanStatus
     scan_type: ScanType
     modules: list | None
+    name: str | None
     risk_score: float | None
     findings_count: int
     error_message: str | None

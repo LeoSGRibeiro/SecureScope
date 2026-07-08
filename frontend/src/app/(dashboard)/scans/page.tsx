@@ -105,8 +105,8 @@ export default function ScansPage() {
                 className="flex items-center gap-4 p-4 hover:bg-accent/20 transition-colors group rounded-xl"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-xs text-muted-foreground">
                       #{scan.id.slice(0, 8).toUpperCase()}
                     </span>
                     <span className={cn(
@@ -115,7 +115,13 @@ export default function ScansPage() {
                     )}>
                       {scan.status}
                     </span>
-                    <span className="text-xs text-muted-foreground capitalize">{scan.scan_type}</span>
+                    {scan.name ? (
+                      <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate max-w-xs">
+                        {scan.name}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground capitalize">{scan.scan_type}</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-muted-foreground flex items-center gap-1">

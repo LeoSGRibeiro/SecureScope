@@ -1,8 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, RefreshCw, Shield, Clock, FileText, FileSpreadsheet, Download } from "lucide-react";
+import { ArrowLeft, RefreshCw, Shield, Clock, FileText, FileSpreadsheet, Download, Pencil, Check, X } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { scansApi } from "@/lib/api";
@@ -33,6 +33,31 @@ export default function ScanDetailPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const [exporting, setExporting] = useState<"pdf" | "gerencial" | "csv" | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  const renameMutation = useMutation({
+    mutationFn: (name: string | null) => scansApi.rename(id, name),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["scan", id] });
+      qc.invalidateQueries({ queryKey: ["scans"] });
+      setEditingName(false);
+      toast.success("Nome atualizado");
+    },
+    onError: () => toast.error("Erro ao renomear"),
+  });
+
+  const startEditName = () => {
+    setNameInput(scan?.name || "");
+    setEditingName(true);
+    setTimeout(() => nameRef.current?.focus(), 50);
+  };
+
+  const commitName = () => {
+    const trimmed = nameInput.trim();
+    renameMutation.mutate(trimmed || null);
+  };
 
   const handleExport = async (type: "pdf" | "gerencial" | "csv") => {
     setExporting(type);
@@ -99,11 +124,11 @@ export default function ScanDetailPage() {
         <Link href="/scans" className="text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="font-mono text-xl font-bold text-foreground">
-              SCAN #{scan.id.slice(0, 8).toUpperCase()}
-            </h1>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="font-mono text-base font-semibold text-muted-foreground">
+              #{scan.id.slice(0, 8).toUpperCase()}
+            </span>
             <span className={cn(
               "text-xs font-bold uppercase px-2.5 py-1 rounded border",
               scanStatusColor(scan.status)
@@ -111,10 +136,40 @@ export default function ScanDetailPage() {
               {scan.status}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+
+          {/* Nome amigável — edição inline */}
+          <div className="flex items-center gap-2 mt-1">
+            {editingName ? (
+              <>
+                <input
+                  ref={nameRef}
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") commitName(); if (e.key === "Escape") setEditingName(false); }}
+                  placeholder="Nome amigável do scan..."
+                  className="text-lg font-bold bg-transparent border-b border-primary outline-none text-foreground placeholder:text-muted-foreground/50 w-72"
+                />
+                <button onClick={commitName} disabled={renameMutation.isPending} className="text-primary hover:text-primary/80">
+                  <Check className="w-4 h-4" />
+                </button>
+                <button onClick={() => setEditingName(false)} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <button onClick={startEditName} className="flex items-center gap-2 group">
+                <h1 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+                  {scan.name || <span className="text-muted-foreground/50 font-normal text-base italic">Clique para nomear este scan…</span>}
+                </h1>
+                <Pencil className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100" />
+              </button>
+            )}
+          </div>
+
+          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
             <Clock className="w-3 h-3" />
-            Started {timeAgo(scan.created_at)}
-            {scan.completed_at && ` · Completed ${formatDate(scan.completed_at)}`}
+            Iniciado {timeAgo(scan.created_at)}
+            {scan.completed_at && ` · Concluído ${formatDate(scan.completed_at)}`}
           </p>
         </div>
         <div className="flex items-center gap-2">

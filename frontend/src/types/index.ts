@@ -56,6 +56,7 @@ export interface Scan {
   status: ScanStatus;
   scan_type: ScanType;
   modules: string[] | null;
+  name: string | null;
   risk_score: number | null;
   findings_count: number;
   error_message: string | null;
