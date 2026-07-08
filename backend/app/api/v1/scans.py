@@ -299,7 +299,7 @@ def _build_result(scan) -> tuple[dict, object]:
     result = {
         "findings": findings,
         "risk_score": scan.risk_score or 0,
-        "duration_ms": scan.duration_ms or 0,
+        "duration_ms": getattr(scan, "duration_ms", None) or 0,
         "modules_run": modules_run,
     }
     return result, scan_time or datetime.now()

@@ -42,12 +42,17 @@ export default function NewScanPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      scansApi.create({
+    mutationFn: async () => {
+      // Se há módulos intrusivos confirmados, libera o target primeiro
+      if (hasIntrusive && confirmed) {
+        await targetsApi.update(targetId, { intrusive_testing_confirmed: true } as any);
+      }
+      return scansApi.create({
         target_id: targetId,
         scan_type: "full",
         modules: selectedModules,
-      }),
+      });
+    },
     onSuccess: (res) => {
       toast.success("Scan iniciado!");
       router.push(`/scans/${res.data.id}`);
