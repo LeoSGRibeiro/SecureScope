@@ -28,6 +28,7 @@ class TargetCreate(BaseModel):
     scope_notes: str | None = None
     organization: str | None = None
     authorization_confirmed: bool = False
+    intrusive_testing_confirmed: bool = False
 
     @field_validator("value")
     @classmethod
@@ -69,6 +70,7 @@ class TargetOut(BaseModel):
     tags: str | None
     organization: str | None
     authorization_confirmed: bool
+    intrusive_testing_confirmed: bool
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -81,3 +83,4 @@ class TargetUpdate(BaseModel):
     criticality: TargetCriticality | None = None
     scope_notes: str | None = None
     is_active: bool | None = None
+    intrusive_testing_confirmed: bool | None = None

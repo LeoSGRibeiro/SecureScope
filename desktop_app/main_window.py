@@ -2,18 +2,26 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton,
     QLabel, QCheckBox, QGroupBox, QGridLayout, QTableWidget, QTableWidgetItem,
     QHeaderView, QMessageBox, QStatusBar, QFileDialog, QFrame,
+    QRadioButton, QButtonGroup, QInputDialog,
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont
 
+import re
 from datetime import datetime
+from urllib.parse import urlparse
 from scan_worker import ScanWorker
 from security_utils import is_blocked_target, SEVERITY_COLORS, SEVERITY_ORDER
-from export_utils import export_csv, export_pdf
+from export_utils import export_csv, export_pdf, export_pdf_gerencial
 from translations import translate_finding
 from version import APP_VERSION, APP_AUTHOR
+import api_client
 
-MODULES = ["headers", "tls", "cookies", "cors", "fingerprint", "subdomains", "owasp", "port_scan"]
+PASSIVE_MODULES = ["headers", "tls", "cookies", "cors", "fingerprint", "subdomains", "owasp", "port_scan"]
+INTRUSIVE_MODULES = ["sqli_xss", "dirbuster", "auth_bruteforce", "port_scan_deep"]
+MODULES = PASSIVE_MODULES + INTRUSIVE_MODULES
+INTRUSIVE_CONFIRMATION_PHRASE = "EU ENTENDO OS RISCOS"
+INFRA_PROFILE_TITLE = "Infrastructure & Technology Profile"
 
 DARK_DIVIDER = "#2C3445"
 LIGHT_DIVIDER = "#E2E8F0"
@@ -301,6 +309,7 @@ class MainWindow(QMainWindow):
         self.last_url: str = ""
         self.last_scan_time: datetime | None = None
         self.translated: bool = False
+        self._api_token: str | None = None
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -319,12 +328,18 @@ class MainWindow(QMainWindow):
         header.addWidget(subtitle)
         header_row.addLayout(header)
         header_row.addStretch()
-        self.theme_button = QPushButton("☀")
+        self.theme_button = QPushButton("☀ Tema claro")
         self.theme_button.setObjectName("SecondaryButton")
-        self.theme_button.setFixedSize(38, 38)
-        self.theme_button.setToolTip("Alternar tema claro/escuro")
+        self.theme_button.setMinimumHeight(38)
+        self.theme_button.setToolTip("Alternar entre tema claro e escuro")
         self.theme_button.clicked.connect(self.toggle_theme)
         header_row.addWidget(self.theme_button)
+        self.schedule_button = QPushButton("⏰ Agendamentos")
+        self.schedule_button.setObjectName("SecondaryButton")
+        self.schedule_button.setMinimumHeight(38)
+        self.schedule_button.setToolTip("Gerenciar scans automáticos semanais")
+        self.schedule_button.clicked.connect(self.open_schedule_window)
+        header_row.addWidget(self.schedule_button)
         layout.addLayout(header_row)
 
         self.divider = QFrame()
@@ -347,17 +362,52 @@ class MainWindow(QMainWindow):
         url_row.addWidget(self.scan_button)
         layout.addLayout(url_row)
 
+        mode_row = QHBoxLayout()
+        mode_row.setSpacing(16)
+        mode_row.addWidget(QLabel("Modo de scan:"))
+        self.mode_group = QButtonGroup(self)
+        self.radio_standard = QRadioButton("Padrão (recomendado)")
+        self.radio_standard.setChecked(True)
+        self.radio_deep = QRadioButton("Profundo (intrusivo) ⚠")
+        self.mode_group.addButton(self.radio_standard)
+        self.mode_group.addButton(self.radio_deep)
+        self.radio_standard.toggled.connect(self._on_mode_changed)
+        mode_row.addWidget(self.radio_standard)
+        mode_row.addWidget(self.radio_deep)
+        mode_row.addStretch()
+        layout.addLayout(mode_row)
+
+        self.module_checks: dict[str, QCheckBox] = {}
+
         modules_box = QGroupBox("Módulos de scan")
         modules_grid = QGridLayout(modules_box)
         modules_grid.setHorizontalSpacing(20)
         modules_grid.setVerticalSpacing(6)
-        self.module_checks: dict[str, QCheckBox] = {}
-        for i, name in enumerate(MODULES):
+        for i, name in enumerate(PASSIVE_MODULES):
             cb = QCheckBox(name)
             cb.setChecked(True)
             self.module_checks[name] = cb
             modules_grid.addWidget(cb, i // 4, i % 4)
         layout.addWidget(modules_box)
+
+        self.intrusive_box = QGroupBox("Módulos intrusivos ⚠")
+        self.intrusive_box.setObjectName("intrusiveGroup")
+        intrusive_grid = QGridLayout(self.intrusive_box)
+        intrusive_grid.setHorizontalSpacing(20)
+        intrusive_grid.setVerticalSpacing(6)
+        for i, name in enumerate(INTRUSIVE_MODULES):
+            cb = QCheckBox(name)
+            cb.setChecked(False)
+            self.module_checks[name] = cb
+            intrusive_grid.addWidget(cb, i // 4, i % 4)
+        self.intrusive_box.setVisible(False)
+        layout.addWidget(self.intrusive_box)
+
+        self.infra_profile_label = QLabel("")
+        self.infra_profile_label.setObjectName("HeaderSubtitle")
+        self.infra_profile_label.setWordWrap(True)
+        self.infra_profile_label.setVisible(False)
+        layout.addWidget(self.infra_profile_label)
 
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels(["Severidade", "CVE", "Título", "Descrição", "Recomendação"])
@@ -386,6 +436,11 @@ class MainWindow(QMainWindow):
         self.export_pdf_button.setEnabled(False)
         self.export_pdf_button.clicked.connect(self.export_pdf_clicked)
         export_row.addWidget(self.export_pdf_button)
+        self.export_pdf_gerencial_button = QPushButton("📋 Rel. Gerencial")
+        self.export_pdf_gerencial_button.setObjectName("SecondaryButton")
+        self.export_pdf_gerencial_button.setEnabled(False)
+        self.export_pdf_gerencial_button.clicked.connect(self.export_pdf_gerencial_clicked)
+        export_row.addWidget(self.export_pdf_gerencial_button)
         layout.addLayout(export_row)
 
         self.status_bar = QStatusBar()
@@ -397,11 +452,35 @@ class MainWindow(QMainWindow):
         if self.dark_mode:
             self.setStyleSheet(DARK_STYLESHEET)
             self.divider.setStyleSheet(f"background-color: {DARK_DIVIDER}; max-height: 1px; border: none;")
-            self.theme_button.setText("☀")
+            self.theme_button.setText("☀ Tema claro")
         else:
             self.setStyleSheet(LIGHT_STYLESHEET)
             self.divider.setStyleSheet(f"background-color: {LIGHT_DIVIDER}; max-height: 1px; border: none;")
-            self.theme_button.setText("🌙")
+            self.theme_button.setText("🌙 Tema escuro")
+
+    def _on_mode_changed(self, standard_checked: bool):
+        self.intrusive_box.setVisible(not standard_checked)
+        if standard_checked:
+            for name in INTRUSIVE_MODULES:
+                self.module_checks[name].setChecked(False)
+
+    def _confirm_intrusive(self, selected_intrusive: list[str]) -> bool:
+        modules_str = ", ".join(selected_intrusive)
+        text, ok = QInputDialog.getText(
+            self,
+            "Confirmação de Teste Intrusivo",
+            (
+                f"Você selecionou módulos intrusivos ({modules_str}) que enviam payloads de ataque reais "
+                "(injeção SQL/XSS, brute-force, varredura ampla), podendo disparar WAF/IDS ou causar "
+                "bloqueio de contas no alvo.\n\n"
+                "Só prossiga se você tem autorização explícita para testes intrusivos contra este alvo.\n\n"
+                f"Digite \"{INTRUSIVE_CONFIRMATION_PHRASE}\" para continuar:"
+            ),
+        )
+        if not ok or text.strip().upper() != INTRUSIVE_CONFIRMATION_PHRASE:
+            self.status_bar.showMessage("Scan intrusivo cancelado — confirmação não fornecida.")
+            return False
+        return True
 
     def start_scan(self):
         url = self.url_input.text().strip()
@@ -415,9 +494,18 @@ class MainWindow(QMainWindow):
             )
             return
 
-        selected = [name for name, cb in self.module_checks.items() if cb.isChecked()]
+        deep_mode = self.radio_deep.isChecked()
+        if deep_mode:
+            selected = [name for name, cb in self.module_checks.items() if cb.isChecked()]
+        else:
+            selected = [name for name in PASSIVE_MODULES if self.module_checks[name].isChecked()]
+
         if not selected:
             QMessageBox.warning(self, "Nenhum módulo", "Selecione ao menos um módulo de scan.")
+            return
+
+        selected_intrusive = [m for m in selected if m in INTRUSIVE_MODULES]
+        if deep_mode and selected_intrusive and not self._confirm_intrusive(selected_intrusive):
             return
 
         self.table.setRowCount(0)
@@ -425,6 +513,7 @@ class MainWindow(QMainWindow):
         self.url_input.setEnabled(False)
         self.export_csv_button.setEnabled(False)
         self.export_pdf_button.setEnabled(False)
+        self.export_pdf_gerencial_button.setEnabled(False)
         self.translate_button.setEnabled(False)
         self.translated = False
         self.translate_button.setText("Traduzir para PT-BR")
@@ -445,17 +534,30 @@ class MainWindow(QMainWindow):
         if result.get("findings"):
             self.export_csv_button.setEnabled(True)
             self.export_pdf_button.setEnabled(True)
+            self.export_pdf_gerencial_button.setEnabled(True)
             self.translate_button.setEnabled(True)
         self.render_table()
 
     def render_table(self):
         result = self.last_result or {}
+        all_findings = result.get("findings", [])
+        infra_profile = next((f for f in all_findings if f.get("title") == INFRA_PROFILE_TITLE), None)
         findings = sorted(
-            result.get("findings", []),
+            [f for f in all_findings if f.get("title") != INFRA_PROFILE_TITLE],
             key=lambda f: SEVERITY_ORDER.index(f["severity"]) if f["severity"] in SEVERITY_ORDER else len(SEVERITY_ORDER),
         )
         if self.translated:
             findings = [translate_finding(f) for f in findings]
+            if infra_profile:
+                infra_profile = translate_finding(infra_profile)
+
+        if infra_profile:
+            self.infra_profile_label.setText(
+                f"<b>Perfil de Infraestrutura e Tecnologia:</b> {infra_profile.get('description', '')}"
+            )
+            self.infra_profile_label.setVisible(True)
+        else:
+            self.infra_profile_label.setVisible(False)
 
         self.table.setRowCount(len(findings))
         for row, finding in enumerate(findings):
@@ -500,10 +602,17 @@ class MainWindow(QMainWindow):
         result["findings"] = [translate_finding(f) for f in result.get("findings", [])]
         return result
 
+    def _default_export_name(self, extension: str) -> str:
+        host = urlparse(self.last_url).netloc or urlparse(self.last_url).path or "threatlens"
+        host = host.split(":")[0]  # drop port
+        safe_host = re.sub(r"[^a-zA-Z0-9.-]", "_", host).strip("_") or "threatlens"
+        timestamp = (self.last_scan_time or datetime.now()).strftime("%Y%m%d_%H%M")
+        return f"{safe_host}_{timestamp}.{extension}"
+
     def export_csv_clicked(self):
         if not self.last_result:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Exportar CSV", "threatlens_report.csv", "CSV (*.csv)")
+        path, _ = QFileDialog.getSaveFileName(self, "Exportar CSV", self._default_export_name("csv"), "CSV (*.csv)")
         if not path:
             return
         try:
@@ -515,7 +624,7 @@ class MainWindow(QMainWindow):
     def export_pdf_clicked(self):
         if not self.last_result:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Exportar PDF", "threatlens_report.pdf", "PDF (*.pdf)")
+        path, _ = QFileDialog.getSaveFileName(self, "Exportar PDF", self._default_export_name("pdf"), "PDF (*.pdf)")
         if not path:
             return
         try:
@@ -523,3 +632,76 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(f"PDF exportado: {path}")
         except Exception as e:
             QMessageBox.critical(self, "Erro ao exportar PDF", str(e))
+
+    def _default_gerencial_name(self) -> str:
+        base = self._default_export_name("pdf")
+        return base.replace(".pdf", "_gerencial.pdf")
+
+    def export_pdf_gerencial_clicked(self):
+        if not self.last_result:
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Exportar Relatório Gerencial", self._default_gerencial_name(), "PDF (*.pdf)"
+        )
+        if not path:
+            return
+        try:
+            export_pdf_gerencial(self._result_for_export(), self.last_url, path, self.last_scan_time)
+            self.status_bar.showMessage(f"Relatório gerencial exportado: {path}")
+            QMessageBox.information(self, "Exportação concluída", f"Relatório gerencial salvo em:\n{path}")
+        except Exception as e:
+            QMessageBox.critical(self, "Erro ao exportar relatório gerencial", str(e))
+
+    def open_schedule_window(self):
+        from schedule_window import ScheduleWindow
+
+        # Ensure we have a valid API token
+        if not self._api_token:
+            self._api_token = self._prompt_login()
+            if not self._api_token:
+                return
+
+        try:
+            dlg = ScheduleWindow(self._api_token, parent=self)
+            dlg.exec()
+        except Exception as e:
+            # Token may have expired — clear it and let the user retry
+            self._api_token = None
+            QMessageBox.critical(self, "Erro ao abrir agendamentos", str(e))
+
+    def _prompt_login(self) -> str | None:
+        """Ask for API credentials and return a JWT token, or None on cancel/error."""
+        from PySide6.QtWidgets import QDialog, QFormLayout, QDialogButtonBox
+
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Login — Backend ThreatLens")
+        dlg.setMinimumWidth(360)
+        form = QFormLayout(dlg)
+        form.setContentsMargins(16, 16, 16, 16)
+        form.setSpacing(10)
+
+        email_field = QLineEdit("leonardo@guimaraesribeiro.com")
+        password_field = QLineEdit()
+        password_field.setEchoMode(QLineEdit.Password)
+        form.addRow("E-mail:", email_field)
+        form.addRow("Senha:", password_field)
+
+        info = QLabel("Necessário para gerenciar agendamentos no servidor Docker.")
+        info.setWordWrap(True)
+        info.setStyleSheet("color: #9ca3af; font-size: 11px;")
+        form.addRow(info)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(dlg.accept)
+        buttons.rejected.connect(dlg.reject)
+        form.addRow(buttons)
+
+        if dlg.exec() != QDialog.Accepted:
+            return None
+
+        try:
+            token = api_client.login(email_field.text().strip(), password_field.text())
+            return token
+        except Exception as e:
+            QMessageBox.critical(self, "Falha no login", f"Não foi possível autenticar:\n{e}")
+            return None

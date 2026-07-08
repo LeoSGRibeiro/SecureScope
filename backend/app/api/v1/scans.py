@@ -9,6 +9,7 @@ from app.models.scan import Scan, Vulnerability, ScanStatus
 from app.schemas.scan import ScanCreate, ScanOut, ScanDetail, ScanStats, VulnerabilityOut
 from app.api.deps import get_current_user, log_audit
 from app.workers.tasks import execute_scan_task
+from app.core.intrusive import INTRUSIVE_MODULES
 
 router = APIRouter(prefix="/scans", tags=["scans"])
 
@@ -31,6 +32,13 @@ async def create_scan(
     target = target_result.scalar_one_or_none()
     if not target:
         raise HTTPException(404, detail="Target not found or not authorized")
+
+    requested_intrusive = set(payload.modules or []) & INTRUSIVE_MODULES
+    if requested_intrusive and not target.intrusive_testing_confirmed:
+        raise HTTPException(
+            403,
+            detail=f"Intrusive modules {sorted(requested_intrusive)} require Target.intrusive_testing_confirmed=true",
+        )
 
     # Prevent duplicate running scans
     running = await db.execute(

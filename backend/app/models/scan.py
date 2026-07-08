@@ -26,6 +26,10 @@ class ScanType(str, enum.Enum):
     exposure = "exposure"
     owasp = "owasp"
     port_scan = "port_scan"
+    sqli_xss = "sqli_xss"
+    dirbuster = "dirbuster"
+    auth_bruteforce = "auth_bruteforce"
+    port_scan_deep = "port_scan_deep"
 
 
 class Severity(str, enum.Enum):

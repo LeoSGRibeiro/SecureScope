@@ -144,6 +144,23 @@ _RULES: list[tuple[re.Pattern, str]] = [
        r"com nome semelhante — confirme manualmente se ela se aplica à versão detectada antes de tratá-la como confirmada."),
     (re.compile(r"^Review (CVE-[\d-]+) at the official CVE record and confirm applicability before remediating\.$"),
      r"Revise o \1 no registro oficial do CVE e confirme a aplicabilidade antes de corrigir."),
+    (re.compile(r"^Outdated (.+) Version Detected: (.+) \(Latest: (.+)\)$"),
+     r"Versão Desatualizada de \1 Detectada: \2 (Mais Recente: \3)"),
+    (re.compile(r"^The target is running (.+) version (.+)\. The latest stable (.+) release is (.+)\.$"),
+     r"O alvo está executando \1 versão \2. A versão estável mais recente do \3 é \4."),
+    (re.compile(r"^Upgrade (.+) from (.+) to (.+) or the latest stable release in that line\.$"),
+     r"Atualize \1 de \2 para \3 ou para a versão estável mais recente dessa linha."),
+    (re.compile(r"^Infrastructure & Technology Profile$"), "Perfil de Infraestrutura e Tecnologia"),
+    (re.compile(
+        r"^Backend language/platform: (.+)\. CMS: (.+)\. Web server: (.+)\. Hosting/CDN: (.+)\. Frontend: (.+)\.$"
+    ), r"Linguagem/plataforma de backend: \1. CMS: \2. Servidor web: \3. Hospedagem/CDN: \4. Frontend: \5."),
+    (re.compile(r"^Review whether the exposed infrastructure/technology stack is intentional and minimize unnecessary disclosure where possible\.$"),
+     "Revise se a stack de infraestrutura/tecnologia exposta é intencional e minimize a divulgação desnecessária quando possível."),
+    (re.compile(
+        r"^Identified tool versions — (.+)\. Review whether the exposed infrastructure/technology stack is intentional "
+        r"and minimize unnecessary disclosure where possible\.$"
+    ), r"Versões das ferramentas identificadas — \1. Revise se a stack de infraestrutura/tecnologia exposta é "
+       r"intencional e minimize a divulgação desnecessária quando possível."),
 
     # --- subdomains_scanner ---
     (re.compile(r"^(\d+) Live Subdomains Discovered$"), r"\1 Subdomínios Ativos Descobertos"),
@@ -231,9 +248,65 @@ _RULES: list[tuple[re.Pattern, str]] = [
     (re.compile(r"^Target host is internal/private; scan refused$"), "O host do alvo é interno/privado; o scan foi recusado"),
     (re.compile(r"^Port scan timed out$"), "A varredura de portas expirou"),
 
+    # --- sqli_xss_scanner (intrusivo) ---
+    (re.compile(r"^Possible SQL Injection — Parameter '(.+)'$"), r"Possível Injeção de SQL — Parâmetro '\1'"),
+    (re.compile(r"^Payload (.+) on parameter '(.+)' triggered a database/application error pattern \((.+)\)\.$"),
+     r"O payload \1 no parâmetro '\2' disparou um padrão de erro de banco de dados/aplicação (\3)."),
+    (re.compile(r"^Payload (.+) on parameter '(.+)' caused a significant response size change compared to baseline\.$"),
+     r"O payload \1 no parâmetro '\2' causou uma mudança significativa no tamanho da resposta em relação à linha de base."),
+    (re.compile(r"^Possible Time-Based Blind SQL Injection — Parameter '(.+)'$"), r"Possível SQL Injection Cega Baseada em Tempo — Parâmetro '\1'"),
+    (re.compile(r"^Injecting a time-delay payload into parameter '(.+)' caused the response to take ([\d.]+)s \(baseline ([\d.]+)s\)\.$"),
+     r"A injeção de um payload de atraso no parâmetro '\1' fez a resposta demorar \2s (linha de base \3s)."),
+    (re.compile(r"^Reflected XSS — Parameter '(.+)' Not Sanitized$"), r"XSS Refletido — Parâmetro '\1' Não Sanitizado"),
+    (re.compile(r"^Parameter '(.+)' reflects an injected payload unescaped in the response body, indicating a reflected XSS vulnerability\.$"),
+     r"O parâmetro '\1' reflete um payload injetado sem escape no corpo da resposta, indicando uma vulnerabilidade de XSS refletido."),
+    (re.compile(r"^No Injectable Parameters Found$"), "Nenhum Parâmetro Injetável Encontrado"),
+    (re.compile(r"^No query string parameters or form fields were discovered to test for injection\.$"),
+     "Nenhum parâmetro de query string ou campo de formulário foi encontrado para testar injeção."),
+    (re.compile(r"^Use parameterized queries/prepared statements; validate and escape all user input\.$"),
+     "Utilize consultas parametrizadas/prepared statements; valide e escape toda entrada do usuário."),
+    (re.compile(r"^HTML-encode all output; implement a strict Content-Security-Policy\.$"),
+     "Codifique (HTML-encode) toda a saída; implemente um Content-Security-Policy estrito."),
+    (re.compile(r"^Injection scan timed out$"), "A varredura de injeção expirou"),
+
+    # --- dirbuster_scanner (intrusivo) ---
+    (re.compile(r"^Exposed Path: (.+) \(HTTP (\d+)\)$"), r"Caminho Exposto: \1 (HTTP \2)"),
+    (re.compile(r"^Path '(.+)' returned HTTP (\d+), indicating it exists on the server\.$"),
+     r"O caminho '\1' retornou HTTP \2, indicando que ele existe no servidor."),
+    (re.compile(r"^Restrict or remove access to '(.+)' if not required in production\.$"),
+     r"Restrinja ou remova o acesso a '\1' se não for necessário em produção."),
+    (re.compile(r"^No Exposed Paths Found$"), "Nenhum Caminho Exposto Encontrado"),
+    (re.compile(r"^None of the (\d+) probed paths were accessible\.$"), r"Nenhum dos \1 caminhos testados estava acessível."),
+    (re.compile(r"^Directory brute-force timed out$"), "O brute-force de diretórios expirou"),
+
+    # --- auth_bruteforce_scanner (intrusivo) ---
+    (re.compile(r"^No Login Form Detected$"), "Nenhum Formulário de Login Detectado"),
+    (re.compile(r"^No HTML form with a password field was found on the target page; no credential attempts were made\.$"),
+     "Nenhum formulário HTML com campo de senha foi encontrado na página do alvo; nenhuma tentativa de credencial foi feita."),
+    (re.compile(r"^Weak/Default Credentials Accepted$"), "Credenciais Fracas/Padrão Aceitas"),
+    (re.compile(r"^The login form accepted a common/default credential pair \(username '(.+)'\)\.$"),
+     r"O formulário de login aceitou um par de credenciais comum/padrão (usuário '\1')."),
+    (re.compile(r"^Enforce a strong password policy, multi-factor authentication, and account lockout after repeated failures\.$"),
+     "Imponha uma política de senha forte, autenticação multifator e bloqueio de conta após falhas repetidas."),
+    (re.compile(r"^No Default/Weak Credentials Accepted$"), "Nenhuma Credencial Fraca/Padrão Aceita"),
+    (re.compile(r"^None of the (\d+) tested common credential pairs were accepted by the login form\.$"),
+     r"Nenhum dos \1 pares de credenciais comuns testados foi aceito pelo formulário de login."),
+
+    # --- port_scanner_deep (intrusivo) ---
+    (re.compile(r"^Open Port (\d+) \((.+)\) — Banner: (.+)$"), r"Porta Aberta \1 (\2) — Banner: \3"),
+    (re.compile(r"^Exposed Service: (.+) \(port (\d+)\) — Banner: (.+)$"), r"Serviço Exposto: \1 (porta \2) — Banner: \3"),
+    (re.compile(r"^Port (\d+)/tcp \((.+)\) is reachable from the internet\. Database, remote-administration, and infrastructure services should not be directly exposed; this increases the attack surface\.$"),
+     r"A porta \1/tcp (\2) está acessível pela internet. Serviços de banco de dados, administração remota e infraestrutura não devem ser expostos diretamente; isso aumenta a superfície de ataque."),
+    (re.compile(r"^No Open Ports Detected$"), "Nenhuma Porta Aberta Detectada"),
+    (re.compile(r"^None of the (\d+) probed ports responded\.$"), r"Nenhuma das \1 portas testadas respondeu."),
+    (re.compile(r"^Deep port scan timed out$"), "A varredura profunda de portas expirou"),
+
     # --- shared category labels ---
     (re.compile(r"^HTTP Security Headers$"), "Cabeçalhos de Segurança HTTP"),
     (re.compile(r"^Information Disclosure$"), "Exposição de Informações"),
+    (re.compile(r"^Injection$"), "Injeção"),
+    (re.compile(r"^Authentication$"), "Autenticação"),
+    (re.compile(r"^Network Exposure$"), "Exposição de Rede"),
 ]
 
 

@@ -61,5 +61,11 @@ def calculate_risk_score(findings: list[Finding]) -> float:
     if not findings:
         return 100.0
     total_weight = sum(SEVERITY_WEIGHTS.get(f.severity, 0) for f in findings)
-    score = max(0.0, 100.0 - (total_weight * 0.8))
+    # Diminishing-returns curve instead of a linear penalty: a single critical
+    # finding (weight 100) still lands around ~33, and the score keeps easing
+    # toward (but never hitting) 0 as more/worse findings pile up, rather than
+    # the old linear formula which saturated to a flat 0.0 after just a
+    # couple of medium/high findings — making every non-trivial scan
+    # indistinguishable from a catastrophic one.
+    score = 100.0 / (1.0 + total_weight / 50.0)
     return round(score, 1)

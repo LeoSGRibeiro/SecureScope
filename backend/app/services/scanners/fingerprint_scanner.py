@@ -8,189 +8,307 @@ import httpx
 from bs4 import BeautifulSoup
 from app.services.scanners.base import Finding, ScanResult, Severity
 from app.services.scanners.cve_lookup import search_cves
+from app.services.scanners import version_check
+from app.services.scanners import hosting_lookup
 
+# category groups the summary section a tech appears under in the
+# consolidated "Infrastructure & Technology Profile" finding:
+# language (backend language/platform), cms, server (web server software),
+# hosting (cloud/CDN provider), frontend (JS frameworks/libraries), analytics.
 TECH_SIGNATURES = {
     "WordPress": {
         "patterns": [r"/wp-content/", r"/wp-includes/", r'name="generator" content="WordPress'],
         "header_keys": [],
+        "category": "cms",
         "severity": Severity.informational,
     },
     "Drupal": {
         "patterns": [r"Drupal", r"/sites/default/files/", r"drupal\.js"],
         "header_keys": ["x-drupal-cache"],
+        "category": "cms",
         "severity": Severity.informational,
     },
     "Joomla": {
         "patterns": [r"/components/com_", r"/templates/", r"Joomla!"],
         "header_keys": [],
+        "category": "cms",
         "severity": Severity.informational,
     },
     "Laravel": {
         "patterns": [r"laravel_session", r"csrf_token.*laravel"],
         "header_keys": [],
+        "category": "language",
         "severity": Severity.informational,
     },
     "Django": {
         "patterns": [r"csrfmiddlewaretoken", r"django"],
         "header_keys": [],
+        "category": "language",
         "severity": Severity.informational,
     },
     "Ruby on Rails": {
         "patterns": [r"authenticity_token"],
-        "header_keys": ["x-runtime", "x-request-id"],
+        "header_keys": ["x-runtime"],
+        "category": "language",
         "severity": Severity.informational,
     },
     "Next.js": {
         "patterns": [r"__NEXT_DATA__", r"/_next/static/"],
         "header_keys": ["x-nextjs-page"],
+        "category": "frontend",
         "severity": Severity.informational,
     },
     "React": {
         "patterns": [r"react-root", r"data-reactroot", r"__react"],
         "header_keys": [],
+        "category": "frontend",
         "severity": Severity.informational,
     },
     "Vue.js": {
         "patterns": [r"data-v-", r"vue\.js", r"vue\.min\.js"],
         "header_keys": [],
+        "category": "frontend",
         "severity": Severity.informational,
     },
     "Angular": {
         "patterns": [r"ng-version=", r"angular\.js", r"ng-app"],
         "header_keys": [],
+        "category": "frontend",
         "severity": Severity.informational,
     },
     "Svelte": {
         "patterns": [r"svelte-[a-z0-9]{6,}", r"__svelte"],
         "header_keys": [],
+        "category": "frontend",
         "severity": Severity.informational,
     },
     "Alpine.js": {
         "patterns": [r"x-data=", r"alpinejs", r"alpine\.min\.js"],
         "header_keys": [],
+        "category": "frontend",
         "severity": Severity.informational,
     },
     "jQuery": {
         "patterns": [r"jquery[.-](\d+\.\d+)", r"jQuery v(\d+)"],
         "header_keys": [],
+        "category": "frontend",
         "severity": Severity.informational,
     },
     "jQuery UI": {
         "patterns": [r"jquery-ui[.-]", r"jquery\.ui\."],
         "header_keys": [],
+        "category": "frontend",
         "severity": Severity.informational,
     },
     "Bootstrap": {
         "patterns": [r"bootstrap\.min\.css", r"bootstrap\.js"],
         "header_keys": [],
+        "category": "frontend",
         "severity": Severity.informational,
     },
     "Tailwind CSS": {
         "patterns": [r"tailwind(?:css)?\.min\.css", r"class=\"[^\"]*\b(?:flex|grid|px-\d|py-\d|bg-\w+-\d{3})\b"],
         "header_keys": [],
+        "category": "frontend",
         "severity": Severity.informational,
     },
     "Font Awesome": {
         "patterns": [r"font-awesome", r"fontawesome"],
         "header_keys": [],
+        "category": "frontend",
         "severity": Severity.informational,
     },
     "Google Tag Manager": {
         "patterns": [r"googletagmanager\.com/gtm\.js", r"GTM-[A-Z0-9]+"],
         "header_keys": [],
+        "category": "analytics",
         "severity": Severity.informational,
     },
     "Google Analytics": {
         "patterns": [r"google-analytics\.com/analytics\.js", r"gtag\(['\"]config['\"]", r"UA-\d+-\d+"],
         "header_keys": [],
+        "category": "analytics",
         "severity": Severity.informational,
     },
     "Google reCAPTCHA": {
         "patterns": [r"google\.com/recaptcha", r"g-recaptcha"],
         "header_keys": [],
+        "category": "analytics",
         "severity": Severity.informational,
     },
     "Hotjar": {
         "patterns": [r"static\.hotjar\.com"],
         "header_keys": [],
+        "category": "analytics",
         "severity": Severity.informational,
     },
     "Webflow": {
         "patterns": [r"webflow\.js", r"data-wf-site"],
         "header_keys": [],
+        "category": "cms",
         "severity": Severity.informational,
     },
     "Wix": {
         "patterns": [r"wix\.com", r"wixstatic\.com"],
         "header_keys": ["x-wix-request-id"],
+        "category": "cms",
         "severity": Severity.informational,
     },
     "Squarespace": {
         "patterns": [r"squarespace\.com", r"static1\.squarespace\.com"],
         "header_keys": [],
+        "category": "cms",
         "severity": Severity.informational,
     },
     "Shopify": {
         "patterns": [r"cdn\.shopify\.com", r"Shopify\.theme"],
         "header_keys": ["x-shopify-stage"],
+        "category": "cms",
         "severity": Severity.informational,
     },
     "WooCommerce": {
         "patterns": [r"woocommerce"],
         "header_keys": [],
+        "category": "cms",
         "severity": Severity.informational,
     },
     "Magento": {
         "patterns": [r"/skin/frontend/", r"Magento", r"mage/cookies\.js"],
         "header_keys": [],
+        "category": "cms",
         "severity": Severity.informational,
     },
     "PHP": {
         "patterns": [r"\.php(?:[?\"'#]|$)"],
-        "header_keys": ["x-powered-by"],
+        "header_keys": [],
+        "header_value_patterns": [("x-powered-by", r"PHP")],
+        "category": "language",
+        "severity": Severity.informational,
+    },
+    "Java": {
+        "patterns": [r"\.jsp(?:[?\"'#]|$)", r"jsessionid", r"javax\.faces", r"jakarta\.faces"],
+        "header_keys": [],
+        "category": "language",
+        "severity": Severity.informational,
+    },
+    "Node.js (Express)": {
+        "patterns": [],
+        "header_keys": [],
+        "header_value_patterns": [("x-powered-by", r"Express")],
+        "category": "language",
         "severity": Severity.informational,
     },
     "ASP.NET": {
         "patterns": [r"__VIEWSTATE", r"__EVENTVALIDATION"],
         "header_keys": ["x-aspnet-version", "x-aspnetmvc-version"],
+        "header_value_patterns": [("x-powered-by", r"ASP\.NET")],
+        "category": "language",
+        "severity": Severity.informational,
+    },
+    ".NET Core (Kestrel)": {
+        "patterns": [],
+        "header_keys": [],
+        "server_pattern": r"Kestrel",
+        "category": "language",
         "severity": Severity.informational,
     },
     "Cloudflare": {
         "patterns": [],
         "header_keys": ["cf-ray", "cf-cache-status"],
+        "category": "hosting",
         "severity": Severity.informational,
     },
     "AWS CloudFront": {
         "patterns": [],
         "header_keys": ["x-amz-cf-id", "x-amz-cf-pop"],
+        "category": "hosting",
+        "severity": Severity.informational,
+    },
+    "AWS (S3/ELB)": {
+        "patterns": [],
+        "header_keys": [],
+        "server_pattern": r"AmazonS3|awselb",
+        "category": "hosting",
+        "severity": Severity.informational,
+    },
+    "Microsoft Azure": {
+        "patterns": [],
+        "header_keys": ["x-azure-ref"],
+        "category": "hosting",
+        "severity": Severity.informational,
+    },
+    "Google Cloud (GFE)": {
+        "patterns": [],
+        "header_keys": [],
+        "server_pattern": r"gws|Google Frontend",
+        "category": "hosting",
+        "severity": Severity.informational,
+    },
+    "Akamai": {
+        "patterns": [],
+        "header_keys": [],
+        "server_pattern": r"AkamaiGHost",
+        "category": "hosting",
+        "severity": Severity.informational,
+    },
+    "Fastly": {
+        "patterns": [],
+        "header_keys": ["x-served-by", "x-fastly-request-id"],
+        "category": "hosting",
         "severity": Severity.informational,
     },
     "Vercel": {
         "patterns": [],
         "header_keys": ["x-vercel-id", "x-vercel-cache"],
+        "category": "hosting",
         "severity": Severity.informational,
     },
     "Netlify": {
         "patterns": [],
         "header_keys": ["x-nf-request-id"],
+        "category": "hosting",
         "severity": Severity.informational,
     },
     "Nginx": {
         "patterns": [],
         "header_keys": [],
         "server_pattern": r"nginx/?(\S*)",
+        "category": "server",
         "severity": Severity.informational,
     },
     "Apache": {
         "patterns": [],
         "header_keys": [],
         "server_pattern": r"Apache/?(\S*)",
+        "category": "server",
+        "severity": Severity.informational,
+    },
+    "Apache Tomcat": {
+        "patterns": [],
+        "header_keys": [],
+        "server_pattern": r"(?:Apache-Coyote|Tomcat)/?(\S*)",
+        "category": "server",
         "severity": Severity.informational,
     },
     "IIS": {
         "patterns": [],
         "header_keys": [],
         "server_pattern": r"Microsoft-IIS/(\S+)",
+        "category": "server",
+        "severity": Severity.informational,
+    },
+    "LiteSpeed": {
+        "patterns": [],
+        "header_keys": [],
+        "server_pattern": r"LiteSpeed/?(\S*)",
+        "category": "server",
+        "severity": Severity.informational,
+    },
+    "Caddy": {
+        "patterns": [],
+        "header_keys": [],
+        "server_pattern": r"Caddy/?(\S*)",
+        "category": "server",
         "severity": Severity.informational,
     },
 }
@@ -265,11 +383,18 @@ def _cve_findings(tech_label: str, keyword: str, url: str, cve_matches: list[dic
     return findings
 
 
+PHP_VERSION_PATTERN = r"PHP/?([\d.]+)"
+WORDPRESS_VERSION_PATTERN = r"WordPress\s+([\d.]+)"
+JQUERY_VERSION_PATTERN = r"jquery[.-](\d+\.\d+(?:\.\d+)?)"
+BOOTSTRAP_VERSION_PATTERN = r"bootstrap[.-](\d+\.\d+(?:\.\d+)?)"
+
+
 async def scan(url: str, timeout: int = 15) -> ScanResult:
     start = time.monotonic()
     findings: list[Finding] = []
-    raw: dict = {"detected": [], "exposed_paths": [], "cve_lookups": []}
+    raw: dict = {"detected": [], "exposed_paths": [], "cve_lookups": [], "version_checks": []}
     detected_tech: list[str] = []
+    detected_versions: dict[str, str] = {}
 
     try:
         async with httpx.AsyncClient(
@@ -285,6 +410,12 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
             raw["content_type"] = headers.get("content-type", "")
             server = headers.get("server", "")
 
+            # Parsed early so the generator tag content is available both for
+            # version extraction below and for the existing finding further down.
+            soup = BeautifulSoup(body, "lxml")
+            generator_tag = soup.find("meta", attrs={"name": "generator"})
+            generator_content = generator_tag.get("content", "") if generator_tag else ""
+
             # Detect technologies
             for tech, sig in TECH_SIGNATURES.items():
                 matched = False
@@ -297,13 +428,74 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                         if h in headers:
                             matched = True
                             break
+                if not matched:
+                    for header_name, val_pattern in sig.get("header_value_patterns", []):
+                        if re.search(val_pattern, headers.get(header_name, ""), re.IGNORECASE):
+                            matched = True
+                            break
                 if not matched and "server_pattern" in sig:
-                    if re.search(sig["server_pattern"], server, re.IGNORECASE):
+                    m = re.search(sig["server_pattern"], server, re.IGNORECASE)
+                    if m:
                         matched = True
+                        if m.lastindex and m.group(1):
+                            detected_versions[tech] = m.group(1).rstrip(";")
                 if matched:
                     detected_tech.append(tech)
 
             raw["detected"] = detected_tech
+
+            # PHP version: prefer X-Powered-By, fall back to the Server header
+            # (some configs append the PHP version there too).
+            php_match = re.search(PHP_VERSION_PATTERN, headers.get("x-powered-by", ""), re.IGNORECASE) \
+                or re.search(PHP_VERSION_PATTERN, server, re.IGNORECASE)
+            if php_match and php_match.group(1):
+                detected_versions["PHP"] = php_match.group(1)
+
+            # WordPress version, from the generator meta tag.
+            if "WordPress" in detected_tech and generator_content:
+                wp_match = re.search(WORDPRESS_VERSION_PATTERN, generator_content, re.IGNORECASE)
+                if wp_match:
+                    detected_versions["WordPress"] = wp_match.group(1)
+
+            # jQuery / Bootstrap versions, from the page body (script/link src).
+            if "jQuery" in detected_tech:
+                jq_match = re.search(JQUERY_VERSION_PATTERN, body, re.IGNORECASE)
+                if jq_match:
+                    detected_versions["jQuery"] = jq_match.group(1)
+            if "Bootstrap" in detected_tech:
+                bs_match = re.search(BOOTSTRAP_VERSION_PATTERN, body, re.IGNORECASE)
+                if bs_match:
+                    detected_versions["Bootstrap"] = bs_match.group(1)
+
+            # Compare every extracted version against the latest stable release
+            # (where a reliable source exists — see version_check.PRODUCT_SLUGS),
+            # once per technology: builds both the granular "Outdated X" finding
+            # and a line for the consolidated recommendation below, from the
+            # same lookup (avoids querying endoflife.date twice per tech).
+            version_lines: list[str] = []
+            for tech, ver_str in detected_versions.items():
+                raw["version_checks"].append({"technology": tech, "detected_version": ver_str})
+                comparison = await version_check.get_comparison(tech, ver_str)
+                if not comparison:
+                    version_lines.append(f"{tech} {ver_str} (no automated comparison source available for this technology)")
+                    continue
+                if comparison["latest"] is None:
+                    version_lines.append(f"{tech} {ver_str} (latest-version lookup unavailable)")
+                elif comparison["outdated"]:
+                    version_lines.append(f"{tech} {ver_str} → upgrade to {comparison['latest']}")
+                    findings.append(Finding(
+                        title=f"Outdated {tech} Version Detected: {ver_str} (Latest: {comparison['latest']})",
+                        description=f"The target is running {tech} version {ver_str}. The latest stable {tech} release is {comparison['latest']}.",
+                        severity=comparison["severity"],
+                        category="Fingerprint",
+                        module="fingerprint",
+                        affected_url=url,
+                        evidence={"technology": tech, "detected_version": ver_str, "latest_version": comparison["latest"]},
+                        recommendation=f"Upgrade {tech} from {ver_str} to {comparison['latest']} or the latest stable release in that line.",
+                        owasp_category="A06:2021 – Vulnerable and Outdated Components",
+                    ))
+                else:
+                    version_lines.append(f"{tech} {ver_str} is already on the latest stable release")
 
             if detected_tech:
                 findings.append(Finding(
@@ -316,6 +508,61 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                     evidence={"technologies": detected_tech, "server": server},
                     recommendation="Review whether detected technology versions are up-to-date.",
                 ))
+
+            # Consolidated, human-readable profile: language/platform, CMS,
+            # web server (+ version), and hosting/CDN — grouped together so
+            # this information lives in one clear place instead of being
+            # scattered across many small per-tech findings.
+            def _label(tech: str) -> str:
+                v = detected_versions.get(tech)
+                return f"{tech} {v}" if v else tech
+
+            by_category: dict[str, list[str]] = {"language": [], "cms": [], "server": [], "hosting": [], "frontend": []}
+            for tech in detected_tech:
+                cat = TECH_SIGNATURES.get(tech, {}).get("category")
+                if cat in by_category:
+                    by_category[cat].append(_label(tech))
+
+            hosting_org = await hosting_lookup.resolve_hosting_org(url)
+            hosting_list = by_category["hosting"]
+            if hosting_org:
+                org_note = f"IP {hosting_org['ip']} — {hosting_org['org']}"
+                hosting_summary = f"{', '.join(hosting_list)} ({org_note})" if hosting_list else org_note
+            else:
+                hosting_summary = ", ".join(hosting_list) if hosting_list else "Not detected"
+
+            language_summary = ", ".join(by_category["language"]) if by_category["language"] else "Not detected"
+            cms_summary = ", ".join(by_category["cms"]) if by_category["cms"] else "Not detected"
+            server_summary = ", ".join(by_category["server"]) if by_category["server"] else "Not detected"
+            frontend_summary = ", ".join(by_category["frontend"]) if by_category["frontend"] else "Not detected"
+
+            findings.append(Finding(
+                title="Infrastructure & Technology Profile",
+                description=(
+                    f"Backend language/platform: {language_summary}. "
+                    f"CMS: {cms_summary}. "
+                    f"Web server: {server_summary}. "
+                    f"Hosting/CDN: {hosting_summary}. "
+                    f"Frontend: {frontend_summary}."
+                ),
+                severity=Severity.informational,
+                category="Fingerprint",
+                module="fingerprint",
+                affected_url=url,
+                evidence={
+                    "language": by_category["language"],
+                    "cms": by_category["cms"],
+                    "server": by_category["server"],
+                    "hosting": hosting_list,
+                    "hosting_ip_org": hosting_org,
+                    "frontend": by_category["frontend"],
+                },
+                recommendation=(
+                    (f"Identified tool versions — {'; '.join(version_lines)}. " if version_lines else "")
+                    + "Review whether the exposed infrastructure/technology stack is intentional and "
+                    "minimize unnecessary disclosure where possible."
+                ),
+            ))
 
             covered_keywords: set[str] = set()
 
@@ -361,10 +608,8 @@ async def scan(url: str, timeout: int = 15) -> ScanResult:
                 findings.extend(_cve_findings(tech, keyword, url, cve_matches))
 
             # Check exposed generator/version meta tags
-            soup = BeautifulSoup(body, "lxml")
-            generator = soup.find("meta", attrs={"name": "generator"})
-            if generator:
-                content = generator.get("content", "")
+            if generator_tag:
+                content = generator_content
                 findings.append(Finding(
                     title=f"Generator Meta Tag Discloses Technology: {content}",
                     description="The <meta name='generator'> tag reveals CMS/platform version to reconnaissance.",

@@ -7,4 +7,8 @@ from app.services.scanners import (
     subdomains_scanner,
     owasp_scanner,
     port_scanner,
+    sqli_xss_scanner,
+    dirbuster_scanner,
+    auth_bruteforce_scanner,
+    port_scanner_deep,
 )

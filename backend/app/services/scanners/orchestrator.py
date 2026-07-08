@@ -13,8 +13,13 @@ from app.services.scanners import (
     subdomains_scanner,
     owasp_scanner,
     port_scanner,
+    sqli_xss_scanner,
+    dirbuster_scanner,
+    auth_bruteforce_scanner,
+    port_scanner_deep,
 )
 from app.services.scanners.base import ScanResult, Finding, calculate_risk_score
+from app.core.intrusive import INTRUSIVE_MODULES
 
 MODULE_MAP = {
     "headers": headers_scanner.scan,
@@ -25,9 +30,15 @@ MODULE_MAP = {
     "subdomains": subdomains_scanner.scan,
     "owasp": owasp_scanner.scan,
     "port_scan": port_scanner.scan,
+    "sqli_xss": sqli_xss_scanner.scan,
+    "dirbuster": dirbuster_scanner.scan,
+    "auth_bruteforce": auth_bruteforce_scanner.scan,
+    "port_scan_deep": port_scanner_deep.scan,
 }
 
-FULL_SCAN_MODULES = list(MODULE_MAP.keys())
+# A "full scan" (modules=None/empty) only ever runs passive, non-intrusive
+# modules. Intrusive modules must always be explicitly requested by name.
+FULL_SCAN_MODULES = [name for name in MODULE_MAP if name not in INTRUSIVE_MODULES]
 
 
 async def run_scan(url: str, modules: list[str] | None = None) -> dict:

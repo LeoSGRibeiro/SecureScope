@@ -35,6 +35,7 @@ class Target(Base):
     organization: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     authorization_confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
+    intrusive_testing_confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

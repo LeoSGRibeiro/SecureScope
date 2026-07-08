@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import UUID
 from typing import Any
 from app.models.scan import ScanStatus, ScanType, Severity
+from app.core.intrusive import ALL_MODULES
 
 
 class ScanCreate(BaseModel):
@@ -13,9 +14,8 @@ class ScanCreate(BaseModel):
     @field_validator("modules")
     @classmethod
     def valid_modules(cls, v):
-        allowed = {"headers", "tls", "cookies", "cors", "fingerprint", "subdomains", "owasp", "port_scan"}
         if v:
-            invalid = set(v) - allowed
+            invalid = set(v) - ALL_MODULES
             if invalid:
                 raise ValueError(f"Invalid modules: {invalid}")
         return v

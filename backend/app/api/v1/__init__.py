@@ -1,7 +1,8 @@
 from fastapi import APIRouter
-from app.api.v1 import auth, targets, scans
+from app.api.v1 import auth, targets, scans, scheduled_scans
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth.router)
 api_router.include_router(targets.router)
 api_router.include_router(scans.router)
+api_router.include_router(scheduled_scans.router)
