@@ -163,7 +163,7 @@ async def get_scan(
 
 
 @router.delete("/{scan_id}", status_code=204)
-async def cancel_scan(
+async def delete_scan(
     scan_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -174,9 +174,11 @@ async def cancel_scan(
     scan = result.scalar_one_or_none()
     if not scan:
         raise HTTPException(404, detail="Scan not found")
-    if scan.status not in (ScanStatus.pending, ScanStatus.running):
-        raise HTTPException(400, detail="Only pending/running scans can be cancelled")
-    scan.status = ScanStatus.cancelled
+    # Se ainda rodando, cancela primeiro para o worker não tentar atualizar depois
+    if scan.status in (ScanStatus.pending, ScanStatus.running):
+        scan.status = ScanStatus.cancelled
+        await db.commit()
+    await db.delete(scan)
     await db.commit()
 
 

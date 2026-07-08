@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { ArrowLeft, Scan, Plus, AlertTriangle } from "lucide-react";
@@ -29,7 +29,8 @@ const INTRUSIVE_MODULES = [
 
 export default function NewScanPage() {
   const router = useRouter();
-  const [targetId, setTargetId] = useState("");
+  const searchParams = useSearchParams();
+  const [targetId, setTargetId] = useState(searchParams.get("target") ?? "");
   const [selectedModules, setSelectedModules] = useState<string[]>(
     PASSIVE_MODULES.map((m) => m.id)
   );
